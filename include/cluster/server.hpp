@@ -18,7 +18,7 @@ class ServerException
 {
 
 public:
-	ServerException(const std::string &text) : text(text) {}
+	ServerException(const std::string &str_text) : text(str_text) {}
 	std::string text;
 
 }; // end class ServerException
@@ -31,9 +31,9 @@ public:
 	Server(const Server &s);
 	Server& operator=(const Server &s);
 	~Server();
-	void setCallback(std::function<void(const Address &from, const Package &data, Package &answer)> callback)
+	void setCallback(std::function<void(const Address &from, const Package &data, Package &answer)> fn_callback)
 	{
-		this->callback = callback;
+		this->callback = fn_callback;
 	}
 
 private:

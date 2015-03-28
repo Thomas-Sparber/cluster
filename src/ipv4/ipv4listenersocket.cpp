@@ -15,11 +15,11 @@ using namespace cluster;
 
 const unsigned int LISTEN_BACKLOG = 50;
 
-IPv4ListenerSocket::IPv4ListenerSocket(uint16_t port, unsigned int timeout) :
+IPv4ListenerSocket::IPv4ListenerSocket(uint16_t ui_port, unsigned int ui_timeout) :
 	ListenerSocket(),
-	port(port),
+	port(ui_port),
 	fd_socket(),
-	timeout(timeout)
+	timeout(ui_timeout)
 {
 	struct sockaddr_in addr4;
 	fd_socket = socket(AF_INET, SOCK_STREAM, 0);

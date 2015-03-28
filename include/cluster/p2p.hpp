@@ -24,6 +24,9 @@ public:
 	p2p(const Protocol &p);
 	~p2p();
 
+	void open();
+	void close();
+
 	virtual void addMemberCallback(MemberCallback *memberCallback)
 	{
 		this->memberCallbacks.push_back(memberCallback);
@@ -62,22 +65,29 @@ private:
         void connectToHosts();
 	bool testConnection(const Address &ip, unsigned int retry);
 	void checkForNewMembers();
-	void online(const Address &address, unsigned int memb);
+	void online(const Address &address, unsigned long long otherTime);
 	void offline(const Address &address);
 	virtual bool ClusterObject_ask(const Address &ip, const Package &message, Package *answer);
-	virtual void ClusterObject_send(const Package &message, Package *answer);
+	virtual bool ClusterObject_send(const Package &message, Package *answer);
+
+	bool isReady() const
+	{
+		return (members.empty() || (otherPeersChecked && !members.empty()));
+	}
 
 private:
 	std::mutex addressRangeMutex;
 	std::list<std::pair<Address*,Address*> > addressRanges;
 	const Protocol &protocol;
 	bool isConnected;
+	bool otherPeersChecked;
 	std::list<Address*> addresses;
 	std::list<Client> members;
 	Server* server;
 	std::thread *testAliveThread;
 	std::mutex memberMutex;
 	std::list<MemberCallback*> memberCallbacks;
+	unsigned long long startTime;
 
 }; // end class p2p
 

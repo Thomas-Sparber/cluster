@@ -15,11 +15,11 @@ using namespace cluster;
 
 const unsigned int LISTEN_BACKLOG = 50;
 
-IPv6ListenerSocket::IPv6ListenerSocket(uint16_t port, unsigned int timeout) :
+IPv6ListenerSocket::IPv6ListenerSocket(uint16_t ui_port, unsigned int ui_timeout) :
 	ListenerSocket(),
-	port(port),
+	port(ui_port),
 	fd_socket(),
-	timeout(timeout)
+	timeout(ui_timeout)
 {
 	struct sockaddr_in6 addr6;
 	fd_socket = socket(AF_INET6, SOCK_STREAM, 0);

@@ -7,18 +7,18 @@
 using namespace std;
 using namespace cluster;
 
-IPv4Address::IPv4Address(const unsigned char a[4]) :
-	Address(IPv4Address::encode(a)),
+IPv4Address::IPv4Address(const unsigned char uc_a[4]) :
+	Address(IPv4Address::encode(uc_a)),
 	a()
 {
 	for(unsigned int i = 0; i < 4; i++)
 	{
-		this->a[i] = a[i];
+		this->a[i] = uc_a[i];
 	}
 }
 
-IPv4Address::IPv4Address(const string &address) :
-	Address(address),
+IPv4Address::IPv4Address(const string &str_address) :
+	Address(str_address),
 	a()
 {
 	decode(this->address, a);

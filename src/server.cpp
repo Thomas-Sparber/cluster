@@ -9,10 +9,10 @@
 using namespace std;
 using namespace cluster;
 
-Server::Server(const Protocol &protocol) :
+Server::Server(const Protocol &p_protocol) :
 	running(true),
 	socket(nullptr),
-	protocol(&protocol),
+	protocol(&p_protocol),
 	callback(nullptr),
 	t(),
 	answerThread(),

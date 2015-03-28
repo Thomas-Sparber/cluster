@@ -10,10 +10,10 @@
 using namespace std;
 using namespace cluster;
 
-IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, uint16_t port, int fd_client, unsigned int timeout) :
+IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, uint16_t ui_port, int client, unsigned int timeout) :
 	CommunicationSocket(ipAddress),
-	port(port),
-	fd_client(fd_client),
+	port(ui_port),
+	fd_client(client),
 	counter(new int(1))
 {
 	struct timeval tv;
@@ -23,9 +23,9 @@ IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, u
 	setsockopt(fd_client, SOL_SOCKET, SO_RCVTIMEO, static_cast<void*>(&tv), sizeof(struct timeval));
 }
 
-IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, uint16_t port, unsigned int timeout) :
+IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, uint16_t ui_port, unsigned int timeout) :
 	CommunicationSocket(ipAddress),
-	port(port),
+	port(ui_port),
 	fd_client(),
 	counter(nullptr)
 {
@@ -85,21 +85,27 @@ IPv4CommunicationSocket::~IPv4CommunicationSocket()
 	(*counter)--;
 	if((*counter) == 0)
 	{
+		int err = -1;
+		socklen_t len = sizeof(err);
+		getsockopt(fd_client, SOL_SOCKET, SO_ERROR, (char*)err, &len);
+		if(shutdown(fd_client, SHUT_RDWR) < 0)	//Terminate the reliable deilivery
+		{
+			if(err != ENOTCONN && err != EINVAL) {}	//Error
+		}
 		close(fd_client);
 		delete counter;
 	}
 }
-//#include <iostream>
+
 bool IPv4CommunicationSocket::send(const Package &message)
 {
-	//cout<<"Sending "<<message.toString()<<endl;
 	assert(counter != nullptr);
 	assert(*counter >= 0);
 	assert(fd_client >= 0);
 
 	unsigned int messageSize = message.getLength();
-	if(write(fd_client, &messageSize, sizeof(messageSize)) == -1)return false;
-	if(write(fd_client, message.getData(), messageSize) == -1)return false;
+	if(write(fd_client, &messageSize, sizeof(messageSize)) != sizeof(messageSize))return false;
+	if(write(fd_client, message.getData(), messageSize) != int(messageSize))return false;
 	return true;
 }
 
@@ -110,17 +116,14 @@ bool IPv4CommunicationSocket::receive(Package *out)
 	assert(fd_client >= 0);
 
 	unsigned int messageSize = 0;
-	if(read(fd_client, &messageSize, sizeof(messageSize)) == -1)return false;
+	if(read(fd_client, &messageSize, sizeof(messageSize)) < 0)return false;
 	char *data = new char[messageSize];
-	if(read(fd_client, data, messageSize) == -1)
+	if(read(fd_client, data, messageSize) < 0)
 	{
 		delete [] data;
 		return false;
 	}
-	if(out){
-		out->append(*data, messageSize);
-		//cout<<"Received "<<out->toString()<<endl;
-	}
+	if(out)out->append(data, messageSize);
 	delete [] data;
 	return true;
 }

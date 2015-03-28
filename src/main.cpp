@@ -17,9 +17,8 @@ void controller(const ClusterContainer<int> *c);
 
 bool running = true;
 
-int main(int __attribute__((__unused__)) argc, char __attribute__((__unused__)) *args[])
+int main(int /*argc*/, char* /*args*/[])
 {
-	signal(SIGABRT, signalHandler);
 	signal(SIGINT, signalHandler);
 
 	string ip1, ip2;
@@ -36,36 +35,34 @@ int main(int __attribute__((__unused__)) argc, char __attribute__((__unused__)) 
 	cout<<"Network structure:"<<endl;
 	network.printWholeStructure();
 
-	thread t(controller, &v);
-
+	//thread t(controller, &v);
+	srandom(unsigned(time(nullptr)));
 	while(running)
 	{
-		if(network.getMembersCount() > 1)
+		m.lock();	//TODO only works with members
+
+		int number = 0;
+		if(v.size() != 0)number = v.get(v.size()-1);
+		number++;
+
+		v.add(number);
+
+		if(v.size() > 2)
 		{
-			m.lock();
+			const int a = v.get(v.size()-3);
+			const int b = v.get(v.size()-2);
 
-			int number = 0;
-			if(v.size() != 0)number = v.get(v.size()-1);
-			number++;
-
-			v.add(number);
-
-			if(v.size() > 2)
-			{
-				const int a = v.get(v.size()-3);
-				const int b = v.get(v.size()-2);
-				if(a > b)
-				{
-					cout<<"Error: "<<a<<", "<<b<<endl;
-//					((char*)nullptr)[1] = 'c';
-				}
-			}
-
-			m.unlock();
+			if(a > b)cout<<"Error: "<<a<<", "<<b<<endl;
 		}
-		else sleep(1);
+
+		m.unlock();
+
+		usleep(random() % 1000000);
 	}
-	t.join();
+	cout<<"Quitting"<<endl;
+	//t.join();
+
+	network.close();
 }
 
 void controller(const ClusterContainer<int> *c)
@@ -84,13 +81,13 @@ void controller(const ClusterContainer<int> *c)
 
 void signalHandler(int signal)
 {
+	static unsigned int counter = 0;
+
 	switch(signal)
 	{
-	case SIGABRT:
-		((int*)nullptr)[0]++;
-		break;
 	case SIGINT:
 		running = false;
+		if(counter++)exit(0);
 		break;
 	default:
 		cout<<"Signal "<<signal<<" not defined."<<endl;

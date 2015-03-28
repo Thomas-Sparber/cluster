@@ -11,11 +11,11 @@ class Package
 {
 
 public:
-	Package(unsigned int allocationSize=1024) :
-		allocationSize(allocationSize),
-		data(new unsigned char[allocationSize]),
+	Package(unsigned int ui_allocationSize=1024) :
+		allocationSize(ui_allocationSize),
+		data(new unsigned char[ui_allocationSize]),
 		length(0),
-		capacity(allocationSize),
+		capacity(ui_allocationSize),
 		iteratorPosition(0)
 	{}
 
@@ -44,20 +44,119 @@ public:
 		return (*this);
 	}
 
-	template <class T>
-	void append(const T &t, unsigned int size)
-	{
-		if(length+size > capacity)reallocate(length + size);
-		const unsigned char *dataToAppend = reinterpret_cast<const unsigned char*>(&t);
-		std::copy(dataToAppend, dataToAppend+size, data+length);
-		length += size;
-	}
+	void append(const char &t){ append_internal(t); }
+	void append(const char16_t &t){ append_internal(t); }
+	void append(const char32_t &t){ append_internal(t); }	
+	void append(const wchar_t &t){ append_internal(t); }
+	void append(const signed char &t){ append_internal(t); }
+	void append(const signed short int &t){ append_internal(t); }
+	void append(const signed int &t){ append_internal(t); }
+	void append(const signed long int &t){ append_internal(t); }
+	void append(const signed long long int &t){ append_internal(t); }
+	void append(const unsigned char &t){ append_internal(t); }
+	void append(const unsigned short int &t){ append_internal(t); }
+	void append(const unsigned int &t){ append_internal(t); }
+	void append(const unsigned long int &t){ append_internal(t); }
+	void append(const unsigned long long int &t){ append_internal(t); }
+	void append(const float &t){ append_internal(t); }
+	void append(const double &t){ append_internal(t); }
+	void append(const long double &t){ append_internal(t); }
+	void append(const bool &t){ append_internal(t); }
 
-	template <class T>
-	void append(const T *t, unsigned int size)
-	{
-		append(*t, size);
-	}
+	void append(const char *array, unsigned int size) { append_internal(array, size); }
+	void append(const char16_t *array, unsigned int size) { append_internal(array, size); }
+	void append(const char32_t *array, unsigned int size) { append_internal(array, size); }
+	void append(const wchar_t *array, unsigned int size) { append_internal(array, size); }
+	void append(const signed char *array, unsigned int size) { append_internal(array, size); }
+	void append(const signed short int *array, unsigned int size) { append_internal(array, size); }
+	void append(const signed int *array, unsigned int size) { append_internal(array, size); }
+	void append(const signed long int *array, unsigned int size) { append_internal(array, size); }
+	void append(const signed long long int *array, unsigned int size) { append_internal(array, size); }
+	void append(const unsigned char *array, unsigned int size) { append_internal(array, size); }
+	void append(const unsigned short int *array, unsigned int size) { append_internal(array, size); }
+	void append(const unsigned int *array, unsigned int size) { append_internal(array, size); }
+	void append(const unsigned long int *array, unsigned int size) { append_internal(array, size); }
+	void append(const unsigned long long int *array, unsigned int size) { append_internal(array, size); }
+	void append(const float *array, unsigned int size) { append_internal(array, size); }
+	void append(const double *array, unsigned int size) { append_internal(array, size); }
+	void append(const long double *array, unsigned int size) { append_internal(array, size); }
+	void append(const bool *array, unsigned int size) { append_internal(array, size); }
+
+	bool get(char &t) const { return get_internal(t); }
+	bool get(char16_t &t) const { return get_internal(t); }
+	bool get(char32_t &t) const { return get_internal(t); }
+	bool get(wchar_t &t) const { return get_internal(t); }
+	bool get(signed char &t) const { return get_internal(t); }
+	bool get(signed short int &t) const { return get_internal(t); }
+	bool get(signed int &t) const { return get_internal(t); }
+	bool get(signed long int &t) const { return get_internal(t); }
+	bool get(signed long long int &t) const { return get_internal(t); }
+	bool get(unsigned char &t) const { return get_internal(t); }
+	bool get(unsigned short int &t) const { return get_internal(t); }
+	bool get(unsigned int &t) const { return get_internal(t); }
+	bool get(unsigned long int &t) const { return get_internal(t); }
+	bool get(unsigned long long int &t) const { return get_internal(t); }
+	bool get(float &t) const { return get_internal(t); }
+	bool get(double &t) const { return get_internal(t); }
+	bool get(long double &t) const { return get_internal(t); }
+	bool get(bool &t) const { return get_internal(t); }
+
+	bool get(char *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(char16_t *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(char32_t *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(wchar_t *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(signed char *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(signed short int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(signed int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(signed long int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(signed long long int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(unsigned char *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(unsigned short int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(unsigned int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(unsigned long int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(unsigned long long int *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(float *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(double *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(long double *&array, unsigned int size) const { return get_internal(array, size); }
+	bool get(bool *&array, unsigned int size) const { return get_internal(array, size); }
+
+	bool getAndNext(char &t) const { return getAndNext_internal(t); }
+	bool getAndNext(char16_t &t) const { return getAndNext_internal(t); }
+	bool getAndNext(char32_t &t) const { return getAndNext_internal(t); }
+	bool getAndNext(wchar_t &t) const { return getAndNext_internal(t); }
+	bool getAndNext(signed char &t) const { return getAndNext_internal(t); }
+	bool getAndNext(signed short int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(signed int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(signed long int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(signed long long int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(unsigned char &t) const { return getAndNext_internal(t); }
+	bool getAndNext(unsigned short int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(unsigned int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(unsigned long int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(unsigned long long int &t) const { return getAndNext_internal(t); }
+	bool getAndNext(float &t) const { return getAndNext_internal(t); }
+	bool getAndNext(double &t) const { return getAndNext_internal(t); }
+	bool getAndNext(long double &t) const { return getAndNext_internal(t); }
+	bool getAndNext(bool &t) const { return getAndNext_internal(t); }
+
+	bool getAndNext(char *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(char16_t *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(char32_t *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(wchar_t *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed char *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed short int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed long int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed long long int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned char *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned short int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned long int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned long long int *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(float *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(double *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(long double *&array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(bool *&array, unsigned int size) const { return getAndNext_internal(array, size); }
 
 	void reallocate(unsigned int size)
 	{
@@ -74,45 +173,11 @@ public:
 		length = 0;
 	}
 
-	template <class T>
-	bool getAndNext(T &t) const
+	Package subPackageFromCurrentPosition() const
 	{
-		bool success = get(t);
-		next<T>();
-		return success;
-	}
-
-	template <class T>
-	bool getAndNext(T *&t, unsigned int size) const
-	{
-		bool success = get(t, size);
-		next(size);
-		return success;
-	}
-
-	template <class T>
-	bool get(T &t) const
-	{
-		unsigned int size = sizeof(T);
-		if(iteratorPosition+size > length)return false;
-		const void *tempData = reinterpret_cast<const void*>(data+iteratorPosition);
-		t = *reinterpret_cast<const T*>(tempData);
-		return true;
-	}
-
-	template <class T>
-	bool get(T *&t, unsigned int size) const
-	{
-		if(iteratorPosition+size > length)return false;
-		std::copy(data+iteratorPosition, data+iteratorPosition+size, reinterpret_cast<unsigned char*>(t));
-		return true;
-	}
-
-	template <class T>
-	void next() const
-	{
-		unsigned int size = sizeof(T);
-		next(size);
+		Package p;
+		p.append(data + iteratorPosition, length - iteratorPosition);
+		return p;
 	}
 
 	void next(unsigned int size) const
@@ -124,6 +189,11 @@ public:
 	const unsigned int& getLength() const
 	{
 		return length;
+	}
+
+	bool empty() const
+	{
+		return (length == 0);
 	}
 
 	const unsigned char* getData() const
@@ -165,6 +235,60 @@ public:
 	}
 
 private:
+	template <class T>
+	void append_internal(const T &t)
+	{
+		const unsigned int size = sizeof(T);
+		if(length+size > capacity)reallocate(length + size);
+		const unsigned char *dataToAppend = reinterpret_cast<const unsigned char*>(&t);
+		std::copy(dataToAppend, dataToAppend+size, data+length);
+		length += size;
+	}
+
+	template <class T>
+	void append_internal(const T *t, unsigned int size)
+	{
+		if(length+size > capacity)reallocate(length + size);
+		const unsigned char *dataToAppend = reinterpret_cast<const unsigned char*>(t);
+		std::copy(dataToAppend, dataToAppend+size, data+length);
+		length += size;
+	}
+
+	template <class T>
+	bool getAndNext_internal(T &t) const
+	{
+		bool success = get_internal(t);
+		next(sizeof(T));
+		return success;
+	}
+
+	template <class T>
+	bool getAndNext_internal(T *&t, unsigned int size) const
+	{
+		bool success = get_internal(t, size);
+		next(size);
+		return success;
+	}
+
+	template <class T>
+	bool get_internal(T &t) const
+	{
+		unsigned int size = sizeof(T);
+		if(iteratorPosition+size > length)return false;
+		const void *tempData = reinterpret_cast<const void*>(data+iteratorPosition);
+		t = *reinterpret_cast<const T*>(tempData);
+		return true;
+	}
+
+	template <class T>
+	bool get_internal(T *&t, unsigned int size) const
+	{
+		if(iteratorPosition+size > length)return false;
+		std::copy(data+iteratorPosition, data+iteratorPosition+size, reinterpret_cast<unsigned char*>(t));
+		return true;
+	}
+
+private:
 	unsigned int allocationSize;
 	unsigned char *data;
 	unsigned int length;
@@ -179,8 +303,7 @@ private:
 template <class T>
 inline void operator<<(Package &p, const T &t)
 {
-	unsigned int size = sizeof(t);
-	p.append(t, size);
+	p.append(t);
 }
 
 template <typename T, unsigned int N>
@@ -193,8 +316,7 @@ template <class T>
  __attribute__ ((deprecated("Inserting a pointer into a package may not be what you want!")))
 inline void operator<<(Package &p, const T *t)
 {
-	unsigned int size = sizeof(t);
-	p.append(t, size);
+	p.append(t, sizeof(t));
 }
 
 template <>
@@ -216,7 +338,7 @@ inline void operator<<(Package &p, const std::string &t)
 template <class T>
 inline bool operator>>(const Package &p, T &t)
 {
-	return p.getAndNext<T>(t);
+	return p.getAndNext(t);
 }
 
 template <typename T, unsigned int N>
@@ -224,7 +346,7 @@ bool operator>>(const Package &p, T(&t)[N])
 {
 	for(unsigned int i = 0; i < N; i++)
 	{
-		if(!p.getAndNext<T>(t[i]))return false;
+		if(!p.getAndNext(t[i]))return false;
 	}
 	return true;
 }

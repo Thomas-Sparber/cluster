@@ -5,18 +5,18 @@
 using namespace std;
 using namespace cluster;
 
-IPv6Address::IPv6Address(const unsigned char a[16]) :
-	Address(IPv6Address::encode(a)),
+IPv6Address::IPv6Address(const unsigned char uc_a[16]) :
+	Address(IPv6Address::encode(uc_a)),
 	a()
 {
 	for(unsigned int i = 0; i < 16; i++)
 	{
-		this->a[i] = a[i];
+		this->a[i] = uc_a[i];
 	}
 }
 
-IPv6Address::IPv6Address(const string &address) :
-	Address(address),
+IPv6Address::IPv6Address(const string &str_address) :
+	Address(str_address),
 	a()
 {
 	decode(this->address, a);

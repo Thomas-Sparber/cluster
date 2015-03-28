@@ -6,10 +6,10 @@
 using namespace std;
 using namespace cluster;
 
-IPv6::IPv6(uint16_t port, unsigned int timeout) :
+IPv6::IPv6(uint16_t ui_port, unsigned int ui_timeout) :
 	Protocol(),
-	port(port),
-	timeout(timeout)
+	port(ui_port),
+	timeout(ui_timeout)
 {}
 
 IPv6::~IPv6()
@@ -69,7 +69,7 @@ Address* IPv6::decodeAddress(const std::string &address) const
 	} catch(const AddressException &e) {
 		try {
 			return new IPv6Address(string("::") + address);
-		} catch(const AddressException &e) {}
+		} catch(const AddressException &ex) {}
 	}
 
 	return nullptr;

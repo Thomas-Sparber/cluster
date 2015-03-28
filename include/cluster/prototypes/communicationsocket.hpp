@@ -12,7 +12,7 @@ class CommunicationException
 {
 
 public:
-	CommunicationException(const std::string &text) : text(text) {}
+	CommunicationException(const std::string &str_text) : text(str_text) {}
 	std::string text;
 
 }; //end class CommunicationException
@@ -21,7 +21,7 @@ class CommunicationSocket
 {
 
 public:
-	CommunicationSocket(const Address &address) : address(address.clone()) {}
+	CommunicationSocket(const Address &a) : address(a.clone()) {}
 
 	CommunicationSocket(const CommunicationSocket &c) : address(c.address->clone()) {}
 

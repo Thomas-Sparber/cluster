@@ -7,8 +7,8 @@
 using namespace std;
 using namespace cluster;
 
-Client::Client(const Address &address, const Protocol &p) :
-	address(address.clone()),
+Client::Client(const Address &a, const Protocol &p) :
+	address(a.clone()),
 	protocol(&p)
 {}
 

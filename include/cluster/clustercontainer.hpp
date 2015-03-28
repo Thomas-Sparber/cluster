@@ -14,7 +14,7 @@ namespace cluster
   * A ClusterContainer is a container of objects which
   * is synchronized across a network. This means, if one object
   * is removed on a node, it is also removed on the other nodes.
-  * It is adviceable to use a ClusterMutex to synchronize
+  * It is advisable to use a ClusterMutex to synchronize
   * access to a ClusterContainer.
   * The ClusterContainer inherits ClusterObjectSerialized in
   * order to make sure that one operation is performed after
@@ -28,40 +28,28 @@ template <class T>
 class ClusterContainer : public ClusterObjectSerialized
 {
 
-private:
-	/**
-	  * This enum is used to be sent to the other members
-	  * of the network to tell them what to do.
-	 **/
-	enum ContainerAction : unsigned char
-	{
-		action_add	= 'a',
-		action_set	= 's',
-		action_erase	= 'e'
-	};
-
 public:
-	ClusterContainer(ClusterObject *network, unsigned int maxPackagesToRemember=100) :
-		ClusterObjectSerialized(network, maxPackagesToRemember),
+	ClusterContainer(ClusterObject *network, unsigned int ui_maxPackagesToRemember=100) :
+		ClusterObjectSerialized(network, ui_maxPackagesToRemember),
 		v()
 	{}
 
 	virtual ~ClusterContainer() {}
 
-	void add(const T &t)
+	bool add(const T &t)
 	{
-		doAndSend(action_add, t, 0);
+		return doAndSend(action_add, t, 0);
 	}
 
-	void set(const T &t, unsigned int i)
+	bool set(const T &t, unsigned int i)
 	{
-		doAndSend(action_set, t, i);
+		return doAndSend(action_set, t, i);
 	}
 
-	void erase(unsigned int i)
+	bool erase(unsigned int i)
 	{
 		char hack[sizeof(T)];
-		doAndSend(action_erase, *reinterpret_cast<const T*>(hack), i);
+		return doAndSend(action_erase, *reinterpret_cast<const T*>(hack), i);
 	}
 
 	const T& get(unsigned int i) const
@@ -89,12 +77,12 @@ public:
 	}
 
 protected:
-	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &send)
+	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &to_send)
 	{
-		if(ClusterObjectSerialized::received(ip, message, answer, send))return true;
+		if(ClusterObjectSerialized::received(ip, message, answer, to_send))return true;
 
 		bool success = true;
-		ContainerAction type;
+		unsigned char type;
 		T t;
 		unsigned int i;
 		while(message>>type)
@@ -106,18 +94,80 @@ protected:
 		return success;
 	}
 
-private:
-	void doAndSend(ContainerAction type, const T &t, unsigned int i)
+	virtual bool perform(const Package &message)
 	{
-		send(type, t, i);
-		perform(type, t, i);
+		bool success = true;
+
+		unsigned char previousType;
+		T previousT;
+		unsigned int previousI;
+
+		unsigned char type;
+		T t;
+		unsigned int i;
+
+		bool first = true;
+		while(message>>type)
+		{
+			if(!(message>>t)){ success = false; break; }
+			if(!(message>>i)){ success = false; break; }
+
+			if(first)
+			{
+				first = false;
+				success = perform(type, t, i) && success;
+			}
+			else
+			{
+				if(previousType != type){success = false; std::cout<<"Different types: "<<previousType<<","<<type<<std::endl;}
+				if(previousI != i){success = false; std::cout<<"Different i's: "<<previousI<<","<<i<<std::endl;}
+				if(previousT != t){success = false; std::cout<<"Different t's: "<<previousT<<","<<t<<std::endl;}
+			}
+
+			previousType = type;
+			previousI = i;
+			previousT = t;
+		}
+
+		return success;
 	}
 
-	bool perform(ContainerAction type, const T &t, unsigned int i)
+	virtual void getRebuildPackage(Package &out)
+	{
+		for(unsigned int i = 0; i < v.size(); ++i)
+		{
+			T &t = v[i];
+			out<<t;
+		}
+	}
+
+	virtual void rebuild(const Package &out)
+	{
+		v.clear();
+		T t;
+		while(out>>t)
+		{
+			v.push_back(t);
+		}
+	}
+
+private:
+	bool doAndSend(unsigned char type, const T &t, unsigned int i)
+	{
+		if(send(type, t, i))
+		{
+			perform(type, t, i);
+			return true;
+		}
+		return false;
+	}
+
+	bool perform(unsigned char type, const T &t, unsigned int i)
 	{
 		switch(type)
 		{
 		case action_add:
+std::cout<<"\t"<<t<<std::endl;
 			v.push_back(t);
 			return true;
 		case action_set:
@@ -133,6 +183,10 @@ private:
 
 private:
 	std::vector<T> v;
+
+	const static unsigned char action_add = 'a';
+	const static unsigned char action_set = 's';
+	const static unsigned char action_erase = 'e';
 
 }; // end class ClusterContainer
 

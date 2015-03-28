@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #ifndef CLUSTEROBJECT_HPP
 #define CLUSTEROBJECT_HPP
 
@@ -11,15 +19,14 @@ namespace cluster
 
 class MemberCallback;
 
+/**
+  * This class is the base class for all objects
+  * of a cluster network. It provides basic functions
+  * for sending, receiving and asking packages. It also
+  * includes methods to register callbacks.
+ **/
 class ClusterObject
 {
-
-private:
-	enum ClusterObjectMessageType : unsigned char
-	{
-		message_child = 's',
-		message_current = 'c'
-	};
 
 public:
 	/**
@@ -46,28 +53,6 @@ public:
 	 **/
 	ClusterObject& operator=(ClusterObject &o)
 	{
-//		if(child)
-//		{
-			//I need to store the child in a temp variable.
-		        //There could be problems when adding it to the network of
-		        //object o when "this" is already part of the network.
-		        //Consider this is the last element of the network and child
-		        //is added to the network. This means that child is appended
-		        //after this. When i set child to nullptr afterwards I remove it.
-		        //Complicated? :-)
-//		        ClusterObject *temp = child;
-
-		        //The current child is not needed anymore because it
-		        //is added to the network
-//		        child = nullptr;
-
-		        //The current child needs to be added to the network
-		        //Otherwise it would be lost. I don't care about the return
-		        //value which is the parent. I don't need it now because I
-		        //get it afterwards when I add "this" to the network
-//		        o.addChild(temp);
-//		}
-
                 //Removing this from the current network and adding it to the new one
                 removeChild(this);
                 this->parent = o.addChild(this);
@@ -76,7 +61,7 @@ public:
 	}
 
 	/**
-	  * The destructor removes the ClusterObject from the network2acgi-
+	  * The destructor removes the ClusterObject from the network
 	 **/
 	virtual ~ClusterObject()
 	{
@@ -84,15 +69,22 @@ public:
 		removeChild(this);
 	}
 
-	ClusterObject* addChild(ClusterObject *child)
+	/**
+	  * Adds the givel ClusterObject as child to the network
+	 **/
+	ClusterObject* addChild(ClusterObject *new_child)
 	{
 		//Add the child to the last position of the list
-		if(this->child)return this->child->addChild(child);
-		else this->child = child;
+		if(this->child)return this->child->addChild(new_child);
+		else this->child = new_child;
 
 		return this;
 	}
 
+	/**
+	  * Removes the given child from the network:
+	  * Asks the top parent to remove the child
+	 **/
 	virtual void removeChild(const ClusterObject *o)
 	{
 		if(!o)return;
@@ -127,6 +119,10 @@ public:
 		}
 	}
 
+	/**
+	  * Prints the whole structure of the network:
+	  * Asks the top parent to print all children's structure
+	 **/
 	void printWholeStructure()
 	{
 		//Go to first element and print child structure
@@ -134,110 +130,156 @@ public:
 		else printChildStructure();
 	}
 
+	/**
+	  * Prints the child structure of the current ClusterObject
+	 **/
 	void printChildStructure()
 	{
+		//Iterates over all children
 		ClusterObject *iterator = this;
 		unsigned int counter = 1;
 		while(iterator)
 		{
+			//Checks for errors in the network
 			if(iterator->parent && iterator->parent->child != iterator)
 			{
 				std::cout<<"Parent-Child doesn't match"<<std::endl;
 				std::cout<<"Parent: "<<iterator->parent->getType()<<std::endl;
 				std::cout<<"Child: "<<iterator->getType()<<std::endl;
 			}
+
+			//Prints curent element
 			std::cout<<(counter++)<<". "<<iterator->getType()<<std::endl;
+
+			//Increases iterator
 			iterator = iterator->child;
 		}
 	}
 
+	/**
+	  * Adds a member callback to the network.
+	  * The top parent needs to override this
+	  * function to actually add the callback
+	 **/
 	virtual void addMemberCallback(MemberCallback *memberCallback)
 	{
 		parent->addMemberCallback(memberCallback);
 	}
 
+	/**
+	  * Removes the member callback from the network.
+	  * The top parent needs to override this
+	  * function to actually remove the callback
+	 **/
 	virtual void removeMemberCallback(MemberCallback *memberCallback)
 	{
 		parent->removeMemberCallback(memberCallback);
 	}
 
+	/**
+	  * Packs the given object in a package and sends it
+	 **/
 	template <class A>
-	void send(const A &a, Package *answer=nullptr)
+	bool send(const A &a, Package *answer=nullptr)
 	{
 		Package message;
-		//message<<message_current;
 		message<<a;
-		/*ClusterObject_*/sendPackage(message, answer);
+		return sendPackage(message, answer);
 	}
 
+	/**
+	  * Packs the given objects in a package and sends them
+	 **/
 	template <class A, class B>
-	void send(const A &a, const B &b, Package *answer=nullptr)
+	bool send(const A &a, const B &b, Package *answer=nullptr)
 	{
 		Package message;
-		//message<<message_current;
 		message<<a;
 		message<<b;
-		/*ClusterObject_*/sendPackage(message, answer);
+		return sendPackage(message, answer);
 	}
 
+	/**
+	  * Packs the given objects in a package and sends them
+	 **/
 	template <class A, class B, class C>
-	void send(const A &a, const B &b, const C &c, Package *answer=nullptr)
+	bool send(const A &a, const B &b, const C &c, Package *answer=nullptr)
 	{
 		Package message;
-		//message<<message_current;
 		message<<a;
 		message<<b;
 		message<<c;
-		/*ClusterObject_*/sendPackage(message, answer);
+		return sendPackage(message, answer);
 	}
 
+	/**
+	  * Packs the given object in a package and sends it
+	  * to the given address only
+	 **/
 	template <class A>
 	bool ask(const Address &ip, const A &a, Package *answer=nullptr)
 	{
 		Package message;
-		//message<<message_current;
 		message<<a;
-		return /*ClusterObject_*/askPackage(ip, message, answer);
+		return askPackage(ip, message, answer);
 	}
 
+	/**
+	  * Packs the given objects in a package and sends them
+	  * to the given address only
+	 **/
 	template <class A, class B>
 	bool ask(const Address &ip, const A &a, const B &b, Package *answer=nullptr)
 	{
 		Package message;
-		//message<<message_current;
 		message<<a;
 		message<<b;
-		return /*ClusterObject_*/askPackage(ip, message, answer);
+		return askPackage(ip, message, answer);
 	}
 
+	/**
+	  * Packs the given objects in a package and sends them
+	  * to the given address only
+	 **/
 	template <class A, class B, class C>
 	bool ask(const Address &ip, const A &a, const B &b, const C &c, Package *answer=nullptr)
 	{
 		Package message;
-		//message<<message_current;
 		message<<a;
 		message<<b;
 		message<<c;
-		return /*ClusterObject_*/askPackage(ip, message, answer);
+		return askPackage(ip, message, answer);
 	}
 
+	/**
+	  * Returns the type of ClusterObject
+	 **/
 	virtual std::string getType() const = 0;
 
 protected:
-	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &send) = 0;
+	/**
+	  * This function is called internally by the network whenever a package
+	  * is received for th current object
+	 **/
+	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &to_send) = 0;
 
-	bool ClusterObject_received(const Address &ip, const Package &message, Package &answer, Package &send)
+	/**
+	  * This function is called internally by the network whenever a package
+	  * is received. This function analyzes whether the message is for
+	  * the current object or a child object
+	 **/
+	bool ClusterObject_received(const Address &ip, const Package &message, Package &answer, Package &to_send)
 	{
 		bool success = false;
-		ClusterObjectMessageType t;
+		unsigned char t;
 		if(!(message>>t))return false;
 		switch(t)
 		{
 		case message_current:
-			success = received(ip, message, answer, send);
+			success = received(ip, message, answer, to_send);
 			break;
 		case message_child:
-			if(this->child)success = child->ClusterObject_received(ip, message, answer, send);
+			if(this->child)success = child->ClusterObject_received(ip, message, answer, to_send);
 			break;
 		default:
 			success = false;
@@ -245,28 +287,39 @@ protected:
 		}
 
 		//If something should be sent add child structure
-		if(send.getLength())
+		if(to_send.getLength())
 		{
 			Package temp;
 			temp<<t;
-			temp<<send;
-			send = temp;
+			temp<<to_send;
+			to_send = temp;
 		}
 
 		return success;
 	}
 
+	/**
+	  * Adds a signature to the package which indicates that
+	  * the package was sent by a child.
+	 **/
 	Package addChildSignature(const Package &a)
 	{
 		return addSignature(a, message_child);
 	}
 
+	/**
+	  * Adds a signature to the package which indicates that
+	  * the package was sent by the current object.
+	 **/
 	Package addCurrentSignature(const Package &a)
 	{
 		return addSignature(a, message_current);
 	}
 
-	Package addSignature(const Package &a, ClusterObjectMessageType type)
+	/**
+	  * Adds the given signature to the package.
+	 **/
+	Package addSignature(const Package &a, const unsigned char type)
 	{
 		Package message;
 		message<<type;
@@ -274,32 +327,71 @@ protected:
 		return message;
 	}
 
-	virtual void sendPackage(const Package &a, Package *answer)
+	/**
+	  * This function should be called by the current
+	  * object to send a message. Then the message
+	  * is received for the current object (at the other
+	  * side(s))
+	 **/
+	virtual bool sendPackage(const Package &a, Package *answer)
 	{
-		ClusterObject_send(addCurrentSignature(a), answer);
+		return ClusterObject_send(addCurrentSignature(a), answer);
 	}
 
+	/**
+	  * This function should be called by the current
+	  * object to ask a member. Then the message
+	  * is received for the current object (at the other
+	  * side(s))
+	 **/
 	virtual bool askPackage(const Address &ip, const Package &a, Package *answer)
 	{
 		return ClusterObject_ask(ip, addCurrentSignature(a), answer);
 	}
 
-	virtual void ClusterObject_send(const Package &a, Package *answer)
+	/**
+	  * This is the final function which is called
+	  * to send a package. The top parent needs to
+	  * override this function to actually send the message.
+	 **/
+	virtual bool ClusterObject_send(const Package &a, Package *answer)
 	{
-		parent->ClusterObject_send(addChildSignature(a), answer);
+		return parent->ClusterObject_send(addChildSignature(a), answer);
 	}
 
+	/**
+	  * This is the final function which is called
+	  * to ask a member. The top parent needs to
+	  * override this function to actually ask the member.
+	 **/
 	virtual bool ClusterObject_ask(const Address &ip, const Package &a, Package *answer)
 	{
 		return parent->ClusterObject_ask(ip, addChildSignature(a), answer);
 	}
 
-public:
+private:
+	/**
+	  * This is a pointer to the next child object of the network
+	 **/
 	ClusterObject *child;
+
+	/**
+	  * This is a pointer to the parent of the network
+	 **/
 	ClusterObject *parent;
+
+	/**
+	  * Indicates that the message was sent by a child object
+	 **/
+	const static unsigned char message_child = 's';
+
+	/**
+	  * Indicates that the message was sent by the current object
+	 **/
+	const static unsigned char message_current = 'c';
 
 }; //end class ClusterObject
 
 } // end namespace cluster
 
-#endif
+#endif //CLUSTEROBJECT_HPP

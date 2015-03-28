@@ -12,7 +12,7 @@ class ListenerException
 {
 
 public:
-	ListenerException(const std::string &text) : text(text) {}
+	ListenerException(const std::string &str_text) : text(str_text) {}
 	std::string text;
 
 }; //end class ListenerException

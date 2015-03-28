@@ -6,10 +6,10 @@
 using namespace std;
 using namespace cluster;
 
-IPv4::IPv4(uint16_t port, unsigned int timeout) :
+IPv4::IPv4(uint16_t ui_port, unsigned int ui_timeout) :
 	Protocol(),
-	port(port),
-	timeout(timeout)
+	port(ui_port),
+	timeout(ui_timeout)
 {}
 
 IPv4::~IPv4()

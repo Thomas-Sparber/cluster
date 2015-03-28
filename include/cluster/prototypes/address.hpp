@@ -10,7 +10,7 @@ class AddressException
 {
 
 public:
-	AddressException(const std::string &text) : text(text) {}
+	AddressException(const std::string &str_text) : text(str_text) {}
 	std::string text;
 
 }; //end class AddressException
@@ -19,7 +19,7 @@ class Address
 {
 
 public:
-	Address(const std::string &address) : address(address) {}
+	Address(const std::string &str_address) : address(str_address) {}
 	virtual ~Address() {}
 
 	virtual Address* clone() const = 0;

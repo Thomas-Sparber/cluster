@@ -12,20 +12,13 @@ class Address;
 class ClusterMutex : public ClusterObject
 {
 
-private:
-	enum ClusterMutexOperation : unsigned char
-	{
-		lock_mutex = 'l',
-		unlock_mutex = 'u'
-	};
-
 public:
-	ClusterMutex(ClusterObject *network, unsigned int minSleepTime=10) :
+	ClusterMutex(ClusterObject *network, unsigned int ui_minSleepTime=10) :
 		ClusterObject(network),
 		tryLock(false),
                 selfLocked(false),
                 clusterLocked(false),
-		minSleepTime(minSleepTime)
+		minSleepTime(ui_minSleepTime)
 	{}
 
 	virtual ~ClusterMutex() {}
@@ -62,12 +55,12 @@ public:
 
 		//Sending the request to the cluster
 		Package response;
-		send(lock_mutex, &response);
+		send('l', &response);
 		if(response.getLength() != 0)	//Mutex can't be locked if one clusternode returns answer
 		{
 			//TODO only send unlock request to members who locked mutex
 			//Save bandwith!
-			send(unlock_mutex, &response);
+			send('u', &response);
 
 			tryLock = false;
 			return false;
@@ -81,7 +74,7 @@ public:
 
         void unlock()
         {
-                send(unlock_mutex);
+                send('u');
                 selfLocked = false;
 	}
 
@@ -91,20 +84,20 @@ public:
 	}
 
 private:
-	virtual bool received(const Address __attribute__((__unused__)) &ip, const Package &message, Package &answer, Package  __attribute__((__unused__)) &send)
+	virtual bool received(const Address &/*ip*/, const Package &message, Package &answer, Package &/*to_send*/)
 	{
-		ClusterMutexOperation type;
+		unsigned char type;
 		message>>type;
 
 		switch(type)
 		{
-		case lock_mutex:
+		case 'l':	//Lock
 			if(tryLock || selfLocked || clusterLocked)
 				answer<<'x';
 			else
 				clusterLocked = true;
 			return true;
-		case unlock_mutex:
+		case 'u':	//Unlock
 			clusterLocked = false;
 			return true;
 		default:
