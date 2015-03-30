@@ -45,7 +45,7 @@ define cleanecho
       @tput sgr0
 endef
 
-doc:
+documentation:
 	doxygen doc/doxygen.conf
 	cd doc/latex && make
 
