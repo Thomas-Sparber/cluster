@@ -1,48 +1,63 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #ifndef PACKAGE_HPP
 #define PACKAGE_HPP
 
 #include <algorithm>
 #include <sstream>
+#include <vector>
 
 namespace cluster
 {
 
+/**
+  * The class Package is responsible for storing
+  * the data which is transferred over the network.
+  * The class supports the operators << and >>
+  * for easy data insertion and retrieval.
+  * Package contains functions for inserting or
+  * retrieving basic data types. To insert and retrieve
+  * objects of user defined classes, the operators
+  * << and >> need to be overridden.
+  * Package also contains a string function to get
+  * the content in string representation this also
+  * works fairly good with binary data.
+ **/
 class Package
 {
 
 public:
-	Package(unsigned int ui_allocationSize=1024) :
-		allocationSize(ui_allocationSize),
-		data(new unsigned char[ui_allocationSize]),
-		length(0),
-		capacity(ui_allocationSize),
+	/**
+	  * Default constructor.
+	 **/
+	Package() :
+		data(),
 		iteratorPosition(0)
 	{}
 
-	Package(const Package &p, bool compress=false) :
-		allocationSize(p.allocationSize),
-		data(new unsigned char[compress ? p.length : p.capacity]),
-		length(p.length),
-		capacity(compress ? p.length : p.capacity),
-		iteratorPosition(p.iteratorPosition)
-	{
-		std::copy(p.data, p.data+p.length, data);
-	}
+	/**
+	  * Constructor to create a Package using
+	  * the given content
+	 **/
+	Package(const unsigned char *uc_data, unsigned int length) :
+		data(uc_data, uc_data+length),
+		iteratorPosition(0)
+	{}
 
-	~Package()
-	{
-		delete [] data;
-	}
-
-	Package& operator=(const Package &p)
-	{
-		allocationSize = p.allocationSize;
-		length = p.length;
-		if(length > capacity)reallocate(length);
-		std::copy(p.data, p.data+p.length, data);
-		iteratorPosition = p.iteratorPosition;
-		return (*this);
-	}
+	/**
+	  * Constructor to create a Package using
+	  * the given content
+	 **/
+	Package(const std::vector<unsigned char> &v_data) :
+		data(v_data),
+		iteratorPosition(0)
+	{}
 
 	void append(const char &t){ append_internal(t); }
 	void append(const char16_t &t){ append_internal(t); }
@@ -158,75 +173,94 @@ public:
 	bool getAndNext(long double *&array, unsigned int size) const { return getAndNext_internal(array, size); }
 	bool getAndNext(bool *&array, unsigned int size) const { return getAndNext_internal(array, size); }
 
-	void reallocate(unsigned int size)
-	{
-		capacity = (size/allocationSize) * allocationSize;
-		if(size % allocationSize != 0)capacity += allocationSize;
-		unsigned char *newData = new unsigned char[capacity];
-		std::copy(data, data+length, newData);
-		delete [] data;
-		data = newData;
-	}
-
+	/**
+	  * Clears the content of the package
+	 **/
 	void clear()
 	{
-		length = 0;
+		data.clear();
 	}
 
+	/**
+	  * Creates a new Package which contains
+	  * the content after the current read position
+	 **/
 	Package subPackageFromCurrentPosition() const
 	{
-		Package p;
-		p.append(data + iteratorPosition, length - iteratorPosition);
-		return p;
+		return Package(&data[iteratorPosition], data.size() - iteratorPosition);
 	}
 
+	/**
+	  * Increases the read operator by the
+	  * given size in Bytes
+	 **/
 	void next(unsigned int size) const
 	{
-		if(iteratorPosition+size > length)return;
+		if(iteratorPosition+size > data.size())return;
 		iteratorPosition += size;
 	}
 
-	const unsigned int& getLength() const
+	/**
+	  * Returns the current content size of the Package
+	 **/
+	unsigned int getLength() const
 	{
-		return length;
+		return data.size();
 	}
 
+	/**
+	  * Checks whether the Package is empty
+	 **/
 	bool empty() const
 	{
-		return (length == 0);
+		return data.empty();
 	}
 
+	/**
+	  * Returns the data as an array of bytes
+	 **/
 	const unsigned char* getData() const
 	{
-		return data;
+		return &(data[0]);
 	}
 
-	const unsigned int& getIteratorPosition() const
+	/**
+	  * Returns the current read iterator position
+	 **/
+	unsigned int getIteratorPosition() const
 	{
 		return iteratorPosition;
 	}
 
+	/**
+	  * Resets the read iterator
+	 **/
 	void resetIterator()
 	{
 		iteratorPosition = 0;
 	}
 
+	/**
+	  * Returns the content of the Package
+	  * as string. Binary values are converted
+	  * to .[HEX].
+	 **/
 	std::string toString() const
 	{
 		std::stringstream os;
 		bool lastWasBinary = false;
-		for(unsigned int i = 0; i < length; i++)
+		for(const char &c : data)
 		{
-			if(isalnum(data[i]))
+			if(isalnum(c))
 			{
 				if(lastWasBinary)os<<'.';
-				os<<data[i];
+				os<<c;
 				lastWasBinary = false;
 			}
 			else
 			{
 				if(!lastWasBinary)os<<'.';
-				os<<std::hex<<int(data[i]);
+				os<<std::hex<<int(c);
 				lastWasBinary = true;
 			}
 		}
@@ -235,25 +269,31 @@ public:
 	}
 
 private:
+	/**
+	  * Appends the given object to the Package
+	 **/
 	template <class T>
 	void append_internal(const T &t)
 	{
-		const unsigned int size = sizeof(T);
-		if(length+size > capacity)reallocate(length + size);
 		const unsigned char *dataToAppend = reinterpret_cast<const unsigned char*>(&t);
-		std::copy(dataToAppend, dataToAppend+size, data+length);
-		length += size;
+		data.insert(data.end(), dataToAppend, dataToAppend + sizeof(T));
 	}
 
+	/**
+	  * Appends the given array of objects to the Package
+	 **/
 	template <class T>
 	void append_internal(const T *t, unsigned int size)
 	{
-		if(length+size > capacity)reallocate(length + size);
+		if(size <= 0)return;
 		const unsigned char *dataToAppend = reinterpret_cast<const unsigned char*>(t);
-		std::copy(dataToAppend, dataToAppend+size, data+length);
-		length += size;
+		data.insert(data.end(), dataToAppend, dataToAppend + (sizeof(T)*size));
 	}
 
+	/**
+	  * Returns an object of the given type and
+	  * increases the iterator by the size of the object
+	 **/
 	template <class T>
 	bool getAndNext_internal(T &t) const
 	{
@@ -262,6 +302,10 @@ private:
 		return success;
 	}
 
+	/**
+	  * Returns an array ob objects of the given type and
+	  * increases the iterator by the size of the objects
+	 **/
 	template <class T>
 	bool getAndNext_internal(T *&t, unsigned int size) const
 	{
@@ -270,29 +314,41 @@ private:
 		return success;
 	}
 
+	/**
+	  * Returns an object of the given type
+	 **/
 	template <class T>
 	bool get_internal(T &t) const
 	{
 		unsigned int size = sizeof(T);
-		if(iteratorPosition+size > length)return false;
-		const void *tempData = reinterpret_cast<const void*>(data+iteratorPosition);
+		if(iteratorPosition+size > data.size())return false;
+		const void *tempData = reinterpret_cast<const void*>(&data[iteratorPosition]);
 		t = *reinterpret_cast<const T*>(tempData);
 		return true;
 	}
 
+	/**
+	  * Returns an array of objects of the given type
+	 **/
 	template <class T>
 	bool get_internal(T *&t, unsigned int size) const
 	{
-		if(iteratorPosition+size > length)return false;
-		std::copy(data+iteratorPosition, data+iteratorPosition+size, reinterpret_cast<unsigned char*>(t));
+		if(size <= 0)return true;
+		if(iteratorPosition+size > data.size())return false;
+		std::copy(&data[iteratorPosition], &data[iteratorPosition+size], reinterpret_cast<unsigned char*>(t));
 		return true;
 	}
 
 private:
-	unsigned int allocationSize;
-	unsigned char *data;
-	unsigned int length;
-	unsigned int capacity;
+
+	/**
+	  * The char array where the data are stored
+	 **/
+	std::vector<unsigned char> data;
+
+	/**
+	  * The current interator position
+	 **/
 	mutable unsigned int iteratorPosition;
 
 }; //end class package
@@ -300,31 +356,36 @@ private:
 
 /*-----	Functions for adding data to package	-----*/
 
+/**
+  * Adds the given object to the Package
+ **/
 template <class T>
 inline void operator<<(Package &p, const T &t)
 {
 	p.append(t);
 }
 
+/**
+  * Adds the given array to the Package
+ **/
 template <typename T, unsigned int N>
 inline void operator<<(Package &p, const T (&t)[N])
 {
 	p.append(t, N);
 }
 
-template <class T>
- __attribute__ ((deprecated("Inserting a pointer into a package may not be what you want!")))
-inline void operator<<(Package &p, const T *t)
-{
-	p.append(t, sizeof(t));
-}
-
+/**
+  * Appends the given Package to the Package
+ **/
 template <>
 inline void operator<<(Package &p, const Package &t)
 {
 	p.append(t.getData(), t.getLength());
 }
 
+/**
+  * Adds the given string to the Package
+ **/
 template <>
 inline void operator<<(Package &p, const std::string &t)
 {
@@ -335,12 +396,18 @@ inline void operator<<(Package &p, const std::string &t)
 
 /*-----	Functions for getting data from package	-----*/
 
+/**
+  * Retrieves the given object from the Package
+ **/
 template <class T>
 inline bool operator>>(const Package &p, T &t)
 {
 	return p.getAndNext(t);
 }
 
+/**
+  * Retrieves the given array from the Package
+ **/
 template <typename T, unsigned int N>
 bool operator>>(const Package &p, T(&t)[N])
 {
@@ -351,6 +418,9 @@ bool operator>>(const Package &p, T(&t)[N])
 	return true;
 }
 
+/**
+  * Retrieves the given string from the Package
+ **/
 template <>
 inline bool operator>>(const Package &p, std::string &t)
 {
