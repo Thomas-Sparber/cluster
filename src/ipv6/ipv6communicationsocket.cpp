@@ -16,7 +16,7 @@ IPv6CommunicationSocket::IPv6CommunicationSocket(const IPv6Address &ipAddress, u
 	fd_client(client),
 	counter(new int(1))
 {
-
+	//Set timeout
 	struct timeval tv;
 	tv.tv_sec = timeout;
 	tv.tv_usec = 0;
@@ -30,17 +30,29 @@ IPv6CommunicationSocket::IPv6CommunicationSocket(const IPv6Address &ipAddress, u
 	fd_client(),
 	counter(nullptr)
 {
+	//Open socket
 	fd_client = socket(AF_INET6, SOCK_STREAM, 0);
 	if(fd_client == -1)
 		throw CommunicationException(string("Unable to create socket: ")+strerror(errno));
+
+	//Open port
 	struct sockaddr_in6 addr;
 	addr.sin6_family = AF_INET6;
 	addr.sin6_port = htons(port);
 	if(inet_pton(AF_INET6, ipAddress.address.c_str(), &addr.sin6_addr) != 1)
+	{
+		close(fd_client);
 		throw CommunicationException(string("Couldn't convert ip address: ")+strerror(errno));
-	if(connect(fd_client, (struct sockaddr*)&addr, sizeof(addr)) == -1)
-		throw CommunicationException(string("Unable to connect to client: ")+strerror(errno));
+	}
 
+	//Connect socket
+	if(connect(fd_client, (struct sockaddr*)&addr, sizeof(addr)) == -1)
+	{
+		close(fd_client);
+		throw CommunicationException(string("Unable to connect to client: ")+strerror(errno));
+	}
+
+	//Set timeout
 	struct timeval tv;
 	tv.tv_sec = timeout;
 	tv.tv_usec = 0;
@@ -61,6 +73,7 @@ IPv6CommunicationSocket::IPv6CommunicationSocket(const IPv6CommunicationSocket &
 	assert(*counter >= 0);
 	assert(fd_client >= 0);
 
+	//Increase reference counter
 	(*counter)++;
 }
 
@@ -73,7 +86,10 @@ IPv6CommunicationSocket& IPv6CommunicationSocket::operator=(const IPv6Communicat
 	port = c.port;
 	fd_client = c.fd_client;
 	counter = c.counter;
+
+	//Increase reference counter
 	(*counter)++;
+
 	return (*this);
 }
 
@@ -83,7 +99,11 @@ IPv6CommunicationSocket::~IPv6CommunicationSocket()
 	assert(*counter >= 0);
 	assert(fd_client >= 0);
 
+	//Decrease reference counter
 	(*counter)--;
+
+	//If this class is the last one that connects
+	//to the socket, close ist
 	if((*counter) == 0)
 	{
 		int err = -1;
@@ -105,8 +125,22 @@ bool IPv6CommunicationSocket::send(const Package &message)
 	assert(fd_client >= 0);
 
 	unsigned int messageSize = message.getLength();
-	if(write(fd_client, &messageSize, sizeof(messageSize)) != sizeof(messageSize))return false;
-	if(write(fd_client, message.getData(), messageSize) != int(messageSize))return false;
+
+	//First sending package size then package content
+
+	//Sending 0 byte packages is illegal
+	if(messageSize <= 0)
+	{
+		messageSize = 1;
+		char data = '\0';
+		if(write(fd_client, &messageSize, sizeof(messageSize)) != sizeof(messageSize))return false;
+		if(write(fd_client, &data, messageSize) != int(messageSize))return false;
+	}
+	else
+	{
+		if(write(fd_client, &messageSize, sizeof(messageSize)) != sizeof(messageSize))return false;
+		if(write(fd_client, message.getData(), messageSize) != int(messageSize))return false;
+	}
 	return true;
 }
 
@@ -116,15 +150,12 @@ bool IPv6CommunicationSocket::receive(Package *out)
 	assert(*counter >= 0);
 	assert(fd_client >= 0);
 
+	//First reading package size then package content
+
 	unsigned int messageSize = 0;
 	if(read(fd_client, &messageSize, sizeof(messageSize)) < 0)return false;
-	char *data = new char[messageSize];
-	if(read(fd_client, data, messageSize) < 0)
-	{
-		delete [] data;
-		return false;
-	}
-	if(out)out->append(data, messageSize);
-	delete [] data;
+	vector<unsigned char> data(messageSize);
+	if(read(fd_client, &data[0], messageSize) < 0)return false;
+	if(out)out->append(&data[0], messageSize);
 	return true;
 }
