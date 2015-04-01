@@ -16,7 +16,7 @@
 using namespace std;
 using namespace cluster;
 
-const unsigned int MAX_PEER_ADDRESS_LENGTH = 50;
+//const unsigned int MAX_PEER_ADDRESS_LENGTH = 50;
 
 const unsigned char echo_message = 'e';
 const unsigned char echo_response_message = 'r';
@@ -29,7 +29,8 @@ p2p::p2p(const Protocol &p) :
 	addressRanges(),
 	protocol(p),
 	isConnected(true),
-	otherPeersChecked(false),
+	otherPeersToCheck(),
+	otherPeersToCheckMutex(),
 	addresses(),
 	members(),
 	server(nullptr),
@@ -245,11 +246,15 @@ void p2p::online(const Address &address, unsigned long long otherTime)
 	//The one with the smaller startTime is the master
 	bool isMaster = (otherTime < startTime);
 
+	const Client client(address, protocol);
+
 	cout<<"Online "<<address.address<<": "<<otherTime<<", "<<startTime<<endl;
-	otherPeersChecked = false;
+	otherPeersToCheckMutex.lock();
+	otherPeersToCheck.push_back(client);
+	otherPeersToCheckMutex.unlock();
 
 	memberMutex.lock();
-	members.push_back(Client(address, protocol));
+	members.push_back(client);
 	memberMutex.unlock();
 
 	ask(address, other_peers);
@@ -272,13 +277,33 @@ void p2p::offline(const Address &address)
 		}
 		members.erase(index);
 	}
-	if(members.size() == 0)otherPeersChecked = false;
 	memberMutex.unlock();
 }
 
 bool p2p::ClusterObject_send(const Package &message, Package *answer)
 {
-	while(!isReady())usleep(1000);
+	otherPeersToCheckMutex.lock();
+	for(unsigned int i = 0; i < 50000 && !otherPeersToCheck.empty(); ++i)
+	{
+		otherPeersToCheckMutex.unlock();
+		usleep(1000);
+		otherPeersToCheckMutex.lock();
+	}
+
+	if(!otherPeersToCheck.empty())
+	{
+		cout<<"Didn't get other_peers_response from "<<otherPeersToCheck.size()<<" client(s)"<<endl;
+		memberMutex.lock();
+		for(const Client &c : otherPeersToCheck)
+		{
+			auto it = find(members.begin(), members.end(), c);
+			if(it == members.end())cout<<"Strange: Waited for other_peers_response for a client who isn't a memeber"<<endl;
+			else members.erase(it);
+		}
+		memberMutex.unlock();
+		otherPeersToCheck.clear();
+	}
+	otherPeersToCheckMutex.unlock();
 
 	list<Client> toSend;
 	memberMutex.lock();
@@ -367,17 +392,18 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 		{
 			if(it->getAddress() != ip)
 			{
-				char address[MAX_PEER_ADDRESS_LENGTH];	//Max string length of ipv6
-				const string &a = it->getAddress().address;
-				copy(a.c_str(), a.c_str()+a.length(), address);
-				address[a.length()] = '\0';
+//				char address[MAX_PEER_ADDRESS_LENGTH];	//Max string length of ipv6
+				const string &address = it->getAddress().address;
+//				copy(a.c_str(), a.c_str()+a.length(), address);
+//				address[a.length()] = '\0';
 				to_send<<address;
 			}
 		}
 		memberMutex.unlock();
 		return true;
 	case other_peers_response: {
-		char address[MAX_PEER_ADDRESS_LENGTH];
+//		char address[MAX_PEER_ADDRESS_LENGTH];
+		string address;
 		list<Address*> tested;
 		while(message>>address)
 		{
@@ -402,15 +428,14 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 			usleep(1000);
 		}
 		for(Address *a : tested)delete a;
-		otherPeersChecked = true;
+		otherPeersToCheckMutex.lock();
+		auto it = find(otherPeersToCheck.begin(), otherPeersToCheck.end(), Client(ip, protocol));
+		if(it == otherPeersToCheck.end())cout<<"Strange: Got other_peers_response from a client I didn't ask."<<endl;
+		else otherPeersToCheck.erase(it);
+		otherPeersToCheckMutex.unlock();
 		return true;
 	}
 	default:
 		return false;
 	}
-}
-
-unsigned int p2p::getMembersCount() const
-{
-	return members.size();
 }
