@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv4/ipv4.hpp>
 #include <ifaddrs.h>
 #include <arpa/inet.h>
@@ -6,10 +14,11 @@
 using namespace std;
 using namespace cluster;
 
-IPv4::IPv4(uint16_t ui_port, unsigned int ui_timeout) :
+IPv4::IPv4(uint16_t ui_port, unsigned int ui_timeout, unsigned int ui_listenBacklog) :
 	Protocol(),
 	port(ui_port),
-	timeout(ui_timeout)
+	timeout(ui_timeout),
+	listenBacklog(ui_listenBacklog)
 {}
 
 IPv4::~IPv4()
@@ -18,7 +27,7 @@ IPv4::~IPv4()
 ListenerSocket* IPv4::createListenerSocket() const
 {
 	try {
-		return new IPv4ListenerSocket(port, timeout);
+		return new IPv4ListenerSocket(port, timeout, listenBacklog);
 	}catch(const ListenerException &e) {}
 
 	return nullptr;
@@ -27,6 +36,7 @@ ListenerSocket* IPv4::createListenerSocket() const
 CommunicationSocket* IPv4::createCommunicationSocket(const Address &address) const
 {
 	try {
+		//Decode Address
 		const IPv4Address *a = static_cast<IPv4Address*>(decodeAddress(address.address));
 		if(!a)throw AddressException("Wrong IPv4 Address");
 
@@ -40,8 +50,8 @@ CommunicationSocket* IPv4::createCommunicationSocket(const Address &address) con
 
 void IPv4::getAddresses(std::list<Address*> &out) const
 {
+	//Read addresses for current computer
 	struct ifaddrs *ifAddrStruct = nullptr;
-
 	getifaddrs(&ifAddrStruct);
 
 	for(struct ifaddrs *ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)

@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv6/ipv6.hpp>
 #include <ifaddrs.h>
 #include <arpa/inet.h>
@@ -6,10 +14,11 @@
 using namespace std;
 using namespace cluster;
 
-IPv6::IPv6(uint16_t ui_port, unsigned int ui_timeout) :
+IPv6::IPv6(uint16_t ui_port, unsigned int ui_timeout, unsigned int ui_listenBacklog) :
 	Protocol(),
 	port(ui_port),
-	timeout(ui_timeout)
+	timeout(ui_timeout),
+	listenBacklog(ui_listenBacklog)
 {}
 
 IPv6::~IPv6()
@@ -18,7 +27,7 @@ IPv6::~IPv6()
 ListenerSocket* IPv6::createListenerSocket() const
 {
 	try {
-		return new IPv6ListenerSocket(port, timeout);
+		return new IPv6ListenerSocket(port, timeout, listenBacklog);
 	}catch(const ListenerException &e) {}
 
 	return nullptr;
@@ -27,6 +36,7 @@ ListenerSocket* IPv6::createListenerSocket() const
 CommunicationSocket* IPv6::createCommunicationSocket(const Address &address) const
 {
 	try {
+		//Decode Address
 		const IPv6Address *a = static_cast<IPv6Address*>(decodeAddress(address.address));
 		if(!a)throw AddressException("Wrong IPv6 Address");
 
@@ -40,8 +50,8 @@ CommunicationSocket* IPv6::createCommunicationSocket(const Address &address) con
 
 void IPv6::getAddresses(std::list<Address*> &out) const
 {
+	//Read addresses for current computer
 	struct ifaddrs *ifAddrStruct = nullptr;
-
 	getifaddrs(&ifAddrStruct);
 
 	for(struct ifaddrs *ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)

@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv4/ipv4communicationsocket.hpp>
 #include <cluster/ipv4/ipv4address.hpp>
 #include <cluster/package.hpp>

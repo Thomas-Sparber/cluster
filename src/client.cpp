@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/client.hpp>
 #include <cluster/prototypes/communicationsocket.hpp>
 #include <cluster/prototypes/protocol.hpp>
@@ -37,8 +45,7 @@ Client::~Client()
 
 bool Client::send(const Package &message, Package *out) const
 {
-	assert(message.getLength() > 0);
-
+	//Create communication socket
 	if(CommunicationSocket *s = protocol->createCommunicationSocket(*address))
 	{
 		bool success = s->send(message) && s->receive(out);
@@ -50,15 +57,10 @@ bool Client::send(const Package &message, Package *out) const
 
 bool Client::operator==(const Client &c)
 {
-	assert(address != nullptr);
-	assert(c.address != nullptr);
-
 	return (*address) == (*c.address);
 }
 
 bool Client::operator==(const Address &a)
 {
-	assert(address != nullptr);
-
 	return (*address) == a;
 }

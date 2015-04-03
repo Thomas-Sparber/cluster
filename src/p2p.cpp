@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/p2p.hpp>
 #include <cluster/prototypes/address.hpp>
 #include <cluster/server.hpp>
@@ -16,12 +24,67 @@
 using namespace std;
 using namespace cluster;
 
-//const unsigned int MAX_PEER_ADDRESS_LENGTH = 50;
+namespace cluster
+{
 
-const unsigned char echo_message = 'e';
-const unsigned char echo_response_message = 'r';
-const unsigned char other_peers = 'p';
-const unsigned char other_peers_response = 'o';
+	/**
+	  * This enum defines the messages
+	  * which are used to communicate between
+	  * p2p networks
+	 **/
+	enum class p2pOperation : unsigned char
+	{
+
+		/**
+		  * An echo message is sent to computers
+		  * to check if they respond
+		 **/
+		echo_message = 'e',
+
+		/**
+		  * An echo response message is answered to
+		  * an echo message to signal that the client
+		  * wants to connect
+		 **/
+		echo_response_message = 'r',
+
+		/**
+		  * This message means that the target client
+		  * should send its other peers
+		 **/
+		other_peers = 'p',
+
+		/**
+		  * This is the response to the other peers
+		  * message which also includes the addresses
+		  * of the other peers
+		 **/
+		other_peers_response = 'o'
+
+	}; //end enum p2pOperation
+
+	/**
+	  * This function is overloaded from the Package class
+	  * to retrieve a p2pOperation from a Package
+	 **/
+	template <>
+	inline bool operator>>(const Package &p, p2pOperation &t)
+	{
+		return p.getAndNext(reinterpret_cast<unsigned char&>(t));
+	}
+
+
+	/**
+	  * This function is overloaded from the Package class
+	  * to insert a p2pOperation into a Package
+	 **/
+	template <>
+	inline void operator<<(Package &p, const p2pOperation &t)
+	{
+		p.append(reinterpret_cast<const unsigned char&>(t));
+	}
+
+} //end namespace cluster
 
 p2p::p2p(const Protocol &p) :
 	ClusterObject(nullptr),
@@ -39,26 +102,34 @@ p2p::p2p(const Protocol &p) :
 	memberCallbacks(),
 	startTime()
 {
+	//Measure start time to determine master host
 	struct timeval t;
 	gettimeofday(&t, nullptr);
 	startTime = (unsigned long long)t.tv_sec * 1000000 + t.tv_usec;
 
+	//Get Addresses of current computer
 	protocol.getAddresses(addresses);
 	for(auto it = addresses.cbegin(); it != addresses.cend(); it++)
 	{
 		cout<<"Server address: "<<(*it)->address<<endl;
 	}
+
+	//Open server socket and search thread
 	open();
 }
 
 p2p::~p2p()
 {
+	//Close server socket and seach thread
 	close();
 
+	//Delete own addresses
 	for(auto it = addresses.begin(); it != addresses.end(); it++)
 	{
 		delete (*it);
 	}
+
+	//Delete address ranges to search
 	for(auto it = addressRanges.begin(); it != addressRanges.end(); it++)
 	{
 		delete it->first;
@@ -70,11 +141,14 @@ void p2p::open()
 {
 	if(!server)
 	{
+		//Open Server socket
 		bool connected = false;
 		while(!connected)
 		{
 			try{
 				server = new Server(protocol);
+
+				//Set callback
 				server->setCallback([this](const Address &ip, const Package &message, Package &answer)
 				{
 					this->received_internal(ip, message, answer);
@@ -136,11 +210,13 @@ void p2p::received_internal(const Address &ip, const Package &message, Package &
 	{
 		cout<<"Invalid package: "<<message.toString()<<endl;
 	}
-	if(to_send.getLength() != 0)Client(ip,protocol).send(to_send);
+	if(!to_send.empty())Client(ip,protocol).send(to_send);
 }
 
 void p2p::connectToHosts()
 {
+	cout<<"TestAlive thread started"<<endl;
+
 	time_t t1;
 	time_t t2;
 	time(&t1);
@@ -212,7 +288,7 @@ bool p2p::testConnection(const Address &ip, unsigned int retry)
 			sleep(1);
 		}
 
-		if(ask(ip, echo_message, startTime))return true;
+		if(ask(ip, p2pOperation::echo_message, startTime))return true;
 	}
 	offline(ip);
 	return false;
@@ -249,16 +325,21 @@ void p2p::online(const Address &address, unsigned long long otherTime)
 	const Client client(address, protocol);
 
 	cout<<"Online "<<address.address<<": "<<otherTime<<", "<<startTime<<endl;
+
+	//Remember host that it needs to answer its members
 	otherPeersToCheckMutex.lock();
 	otherPeersToCheck.push_back(client);
 	otherPeersToCheckMutex.unlock();
 
+	//Add to members
 	memberMutex.lock();
 	members.push_back(client);
 	memberMutex.unlock();
 
-	ask(address, other_peers);
+	//Ask for other peers
+	ask(address, p2pOperation::other_peers);
 
+	//Notify callbacks
 	for(auto it = memberCallbacks.begin(); it != memberCallbacks.end(); it++)
 	{
 		(*it)->memberOnline(address, isMaster);
@@ -271,6 +352,7 @@ void p2p::offline(const Address &address)
 	auto index = find(members.begin(), members.end(), address);
 	if(index != members.end())
 	{
+		//Notify callbacks
 		for(auto it = memberCallbacks.begin(); it != memberCallbacks.end(); it++)
 		{
 			(*it)->memberOffline(address);
@@ -282,6 +364,7 @@ void p2p::offline(const Address &address)
 
 bool p2p::ClusterObject_send(const Package &message, Package *answer)
 {
+	//Other peers need to be checked before sending
 	otherPeersToCheckMutex.lock();
 	for(unsigned int i = 0; i < 50000 && !otherPeersToCheck.empty(); ++i)
 	{
@@ -292,12 +375,12 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 
 	if(!otherPeersToCheck.empty())
 	{
-		cout<<"Didn't get other_peers_response from "<<otherPeersToCheck.size()<<" client(s)"<<endl;
+		cout<<"Didn't get p2pOperation::other_peers_response from "<<otherPeersToCheck.size()<<" client(s)"<<endl;
 		memberMutex.lock();
 		for(const Client &c : otherPeersToCheck)
 		{
 			auto it = find(members.begin(), members.end(), c);
-			if(it == members.end())cout<<"Strange: Waited for other_peers_response for a client who isn't a memeber"<<endl;
+			if(it == members.end())cout<<"Strange: Waited for p2pOperation::other_peers_response for a client who isn't a memeber"<<endl;
 			else members.erase(it);
 		}
 		memberMutex.unlock();
@@ -305,6 +388,7 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 	}
 	otherPeersToCheckMutex.unlock();
 
+	//Sending Package to every member
 	list<Client> toSend;
 	memberMutex.lock();
 	for(auto it = members.cbegin(); it != members.cend(); it++)
@@ -313,6 +397,7 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 	}
 	memberMutex.unlock();
 
+	//At least one more than half of the members need to respond
 	while(toSend.size()+1 > (members.size()+1)/2)
 	{
 		for(auto it = toSend.begin(); it != toSend.end(); it++)
@@ -334,6 +419,7 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 			memberMutex.unlock();
 		}
 
+		//Test connection if not enough members answered
 		if(toSend.size()+1 > members.size()/2)
 		{
 			for(auto it = toSend.begin(); it != toSend.end(); it++)
@@ -348,6 +434,8 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 				}
 				else testConnection(it->getAddress(), 3);	//TODO
 			}
+
+			//Wait for some time to let clients respond
 			usleep(1000);
 		}
 	}
@@ -357,62 +445,60 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 
 bool p2p::received(const Address &ip, const Package &message, Package &/*answer*/, Package &to_send)
 {
-	unsigned char type;
+	p2pOperation type;
 	message>>type;
 	switch(type)
 	{
-	case echo_message:
-	{
+	case p2pOperation::echo_message:
 		if(!isMember(ip))
 		{
+			//Save client as memeber
 			unsigned long long otherTime;
 			message>>otherTime;
 			online(ip, otherTime);
 			cout<<"Online "<<ip.address<<endl;
 		}
-		to_send<<echo_response_message;
+		to_send<<p2pOperation::echo_response_message;
 		to_send<<startTime;
 		return true;
-	}
-	case echo_response_message:
-	{
+	case p2pOperation::echo_response_message:
 		if(!isMember(ip))
 		{
+			//Save client as memeber
 			unsigned long long otherTime;
 			message>>otherTime;
 			online(ip, otherTime);
 			cout<<"Online from response "<<ip.address<<endl;
 		}
 		return true;
-	}
-	case other_peers:
-		to_send<<other_peers_response;
+	case p2pOperation::other_peers:
+		//Send current memebers
+		to_send<<p2pOperation::other_peers_response;
 		memberMutex.lock();
 		for(auto it = members.cbegin(); it != members.cend(); it++)
 		{
 			if(it->getAddress() != ip)
 			{
-//				char address[MAX_PEER_ADDRESS_LENGTH];	//Max string length of ipv6
 				const string &address = it->getAddress().address;
-//				copy(a.c_str(), a.c_str()+a.length(), address);
-//				address[a.length()] = '\0';
 				to_send<<address;
 			}
 		}
 		memberMutex.unlock();
 		return true;
-	case other_peers_response: {
-//		char address[MAX_PEER_ADDRESS_LENGTH];
+	case p2pOperation::other_peers_response: {
+		//Extract other peers from message
 		string address;
 		list<Address*> tested;
 		while(message>>address)
 		{
 			if(Address *a = protocol.decodeAddress(address))
 			{
-				if(testConnection(*a, 1))tested.push_back(a);
+				if(!isOwnAddress(*a) && testConnection(*a, 1))tested.push_back(a);
 				else delete a;
 			}
 		}
+
+		//Wait for all peers to answer
 		for(unsigned int i = 0; i < 100; ++i)
 		{
 			bool allAnswered = true;
@@ -428,9 +514,10 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 			usleep(1000);
 		}
 		for(Address *a : tested)delete a;
+
 		otherPeersToCheckMutex.lock();
 		auto it = find(otherPeersToCheck.begin(), otherPeersToCheck.end(), Client(ip, protocol));
-		if(it == otherPeersToCheck.end())cout<<"Strange: Got other_peers_response from a client I didn't ask."<<endl;
+		if(it == otherPeersToCheck.end())cout<<"Strange: Got p2pOperation::other_peers_response from a client I didn't ask."<<endl;
 		else otherPeersToCheck.erase(it);
 		otherPeersToCheckMutex.unlock();
 		return true;

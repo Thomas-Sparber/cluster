@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv6/ipv6communicationsocket.hpp>
 #include <cluster/ipv6/ipv6address.hpp>
 #include <cluster/package.hpp>

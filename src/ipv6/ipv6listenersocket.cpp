@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv6/ipv6listenersocket.hpp>
 #include <cluster/ipv6/ipv6communicationsocket.hpp>
 #include <cluster/ipv6/ipv6address.hpp>
@@ -13,26 +21,35 @@
 using namespace std;
 using namespace cluster;
 
-const unsigned int LISTEN_BACKLOG = 50;
-
-IPv6ListenerSocket::IPv6ListenerSocket(uint16_t ui_port, unsigned int ui_timeout) :
+IPv6ListenerSocket::IPv6ListenerSocket(uint16_t ui_port, unsigned int ui_timeout, unsigned int listenBacklog) :
 	ListenerSocket(),
 	port(ui_port),
 	fd_socket(),
 	timeout(ui_timeout)
 {
-	struct sockaddr_in6 addr6;
+	//Open socket
 	fd_socket = socket(AF_INET6, SOCK_STREAM, 0);
 	if(fd_socket == -1)throw ListenerException("Unable to create socket.");
+
+	//Reuse address
+	static const int yes = 1;
+	setsockopt(fd_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+	//Open port
+	struct sockaddr_in6 addr6;
 	addr6.sin6_family = AF_INET6;
 	addr6.sin6_port = htons(port);
 	addr6.sin6_addr = in6addr_any;
+
+	//Bind socket
 	if(bind(fd_socket, reinterpret_cast<const sockaddr*>(&addr6), sizeof(addr6)) == -1)
 	{
 		close(fd_socket);
 		throw ListenerException("Unable to bind server socket.");
 	}
-	if(::listen(fd_socket, LISTEN_BACKLOG) == -1)
+
+	//Open listener
+	if(::listen(fd_socket, listenBacklog) == -1)
 	{
 		close(fd_socket);
 		throw ListenerException("Unable to listen on server socket.");

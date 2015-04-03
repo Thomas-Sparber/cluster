@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/prototypes/protocol.hpp>
 #include <cluster/server.hpp>
 #include <cluster/package.hpp>
@@ -19,8 +27,13 @@ Server::Server(const Protocol &p_protocol) :
 	requests(),
 	m()
 {
+	//Open listener connection
 	openConnection();
+
+	//Start thread that polls and accepts connection
 	t = new thread(&Server::serverFunction, this);
+
+	//Start the threads which handle the connections
 	for(unsigned int i = 0; i < handlersCount; i++)
 	{
 		answerThread[i] = new thread(&Server::handle, this);
@@ -52,6 +65,7 @@ Server::~Server()
 
 void Server::closeConnection()
 {
+	cout<<"Closing server socket"<<endl;
 	delete socket;
 }
 
@@ -70,6 +84,7 @@ void Server::serverFunction()
 		}
 		else
 		{
+			//Reopen connection
 			do {
 				try {
 					closeConnection();
@@ -78,9 +93,10 @@ void Server::serverFunction()
 					sleep(1);
 				}
 			}
-			while(!socket);
+			while(running && !socket);
 		}
 	}
+	cout<<"Server closed"<<endl;
 }
 
 void Server::handle()
@@ -88,7 +104,7 @@ void Server::handle()
 	while(running)
 	{
 		m.lock();
-		if(requests.size() == 0)
+		if(requests.empty())
 		{
 			m.unlock();
 			usleep(1000);

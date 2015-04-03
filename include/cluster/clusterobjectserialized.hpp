@@ -59,6 +59,11 @@ protected:
 	  * to override this function. This function is called
 	  * whenever a package was missed and needs to be
 	  * performed.
+	  * The parameter p is a package wich consists of the
+	  * concatenation of the packages from all members
+	  * of the network. So it is a good idea to check if
+	  * the content of all packages identical. If not,
+	  * the network could be corrupt.
 	 **/
 	virtual bool perform(const Package &p) = 0;
 
@@ -75,7 +80,7 @@ protected:
 	/**
 	  * A class which inherits from this class needs
 	  * to override this function. This function is called
-	  * whenever the structure needs to be rebuild entirely.
+	  * whenever the structure needs to be rebuilt entirely.
 	 **/
 	virtual void rebuild(const Package &out) = 0;
 
@@ -281,7 +286,6 @@ protected:
 std::cout<<id;
 				packageToRemember(id, message.subPackageFromCurrentPosition());
 				messageConsumed = false;
-				rebuilded = false;
 			}
 
 			rebuildMutex.unlock();
@@ -300,7 +304,7 @@ std::cout<<id;
 private:
 	void packageToRemember(const unsigned long long id, const Package &pkg)
 	{
-		lastPackages.push_back(std::pair<unsigned long long,Package>(id, Package(pkg, true)));
+		lastPackages.push_back(std::pair<unsigned long long,Package>(id, pkg));
 		while(lastPackages.size() > maxPackagesToRemember)lastPackages.pop_front();
 	}
 
@@ -315,11 +319,13 @@ private:
 		a>>length;
 		if(length > 0)
 		{
+			data = new char[length];
 			a>>id;
 			a.getAndNext(data, length);
 			Package p;
 			p.append(data, length);
 			lastPackages.push_back(std::pair<unsigned long long,Package>(id, p));
+			delete [] data;
 		}
 
 std::cout<<"Last rebuild id was "<<id<<std::endl;

@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv4/ipv4.hpp>
 #include <cluster/ipv6/ipv6.hpp>
 #include <cluster/package.hpp>
@@ -8,12 +16,13 @@
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 using namespace cluster;
 
 void signalHandler(int signal);
-void controller(const ClusterContainer<int> *c);
+template<class Index, class Container> void controller(const ClusterContainer<Index, int, Container> *c);
 
 bool running = true;
 
@@ -29,7 +38,7 @@ int main(int /*argc*/, char* /*args*/[])
 	IPv4 p(1234);
 	p2p network(p);
 	if(ip1.size() && ip2.size())network.addAddressRange(IPv4Address(ip1), IPv4Address(ip2));
-	ClusterContainer<int> v(&network);
+	ClusterList<int> v(&network);
 	ClusterMutex m(&network);
 
 	cout<<"Network structure:"<<endl;
@@ -57,7 +66,7 @@ int main(int /*argc*/, char* /*args*/[])
 
 		m.unlock();
 
-		usleep(random() % 1000000);
+		usleep(random() % 100000);
 	}
 	cout<<"Quitting"<<endl;
 	//t.join();
@@ -65,7 +74,7 @@ int main(int /*argc*/, char* /*args*/[])
 	network.close();
 }
 
-void controller(const ClusterContainer<int> *c)
+template<class Index, class Container> void controller(const ClusterContainer<Index, int, Container> *c)
 {
 	while(running)
 	{

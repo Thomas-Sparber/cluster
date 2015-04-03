@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv4/ipv4address.hpp>
 #include <string>
 #include <sstream>
@@ -33,7 +41,10 @@ void IPv4Address::decode(const std::string &address, unsigned char a[4])
 		char ch = address[i];
 		if(ch == '.')
 		{
+			//More than two dots in an IPv4 Address
+			//is not allowed
 			if(counter > 2)throw AddressException("IP address contains to many numbers");
+
 			a[counter] = (unsigned char)(atoi(s.c_str()));
 			counter++;
 			s = "";
@@ -63,10 +74,14 @@ Address* IPv4Address::clone() const
 void IPv4Address::increase()
 {
 	bool success = false;
+
+	//Increase the address from right to left
 	for(int counter = 3; counter >= 0; counter--)
 	{
 		if(counter == 3)
 		{
+			//254 is the maximum number
+			//allowed or the last block
 			if(a[counter] < 254)
 			{
 				a[counter]++;
@@ -87,6 +102,8 @@ void IPv4Address::increase()
 		}
 	}
 
+	//The highest possible Address
+	//(255.255.255.254) was reached
 	if(!success)
 	{
 		a[0] = 1;

@@ -1,3 +1,11 @@
+/**
+  *
+  * (C) Thomas Sparber
+  * thomas@sparber.eu
+  * 2013-2015
+  *
+ **/
+
 #include <cluster/ipv6/ipv6address.hpp>
 #include <ctype.h>
 #include <arpa/inet.h>
@@ -55,6 +63,8 @@ Address* IPv6Address::clone() const
 void IPv6Address::increase()
 {
 	bool success = false;
+
+	//Increase the address from right to left
 	for(int counter = 15; counter >= 0; counter--)
 	{
 		if(counter == 15)
@@ -79,6 +89,8 @@ void IPv6Address::increase()
 		}
 	}
 
+	//If succeess == false then the highest possible
+	//Address was reached. Setting to lowest address
 	if(!success)
 	{
 		for(unsigned int i = 0; i < 15; i++)

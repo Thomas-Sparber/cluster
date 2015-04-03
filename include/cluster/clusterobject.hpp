@@ -20,6 +20,46 @@ namespace cluster
 class MemberCallback;
 
 /**
+  * This enum defines the actions of the
+  * ClusterObject
+ **/
+enum class ClusterObjectOperation : unsigned char
+{
+	/**
+	  * Indicates that the message is intended
+	  * for a child object
+	 **/
+	current = 'c',
+
+	/**
+	  * Indicates that the message is intended
+	  * for the current object
+	 **/
+	child = 's'
+};
+
+/**
+  * This function is overloaded from the Package class
+  * to retrieve a ClusterObjectOperation from a Package
+ **/
+template <>
+inline bool operator>>(const Package &p, ClusterObjectOperation &t)
+{
+	return p.getAndNext(reinterpret_cast<unsigned char&>(t));
+}
+
+
+/**
+  * This function is overloaded from the Package class
+  * to insert a ClusterObjectOperation into a Package
+ **/
+template <>
+inline void operator<<(Package &p, const ClusterObjectOperation &t)
+{
+	p.append(reinterpret_cast<const unsigned char&>(t));
+}
+
+/**
   * This class is the base class for all objects
   * of a cluster network. It provides basic functions
   * for sending, receiving and asking packages. It also
@@ -271,14 +311,14 @@ protected:
 	bool ClusterObject_received(const Address &ip, const Package &message, Package &answer, Package &to_send)
 	{
 		bool success = false;
-		unsigned char t;
+		ClusterObjectOperation t;
 		if(!(message>>t))return false;
 		switch(t)
 		{
-		case message_current:
+		case ClusterObjectOperation::current:
 			success = received(ip, message, answer, to_send);
 			break;
-		case message_child:
+		case ClusterObjectOperation::child:
 			if(this->child)success = child->ClusterObject_received(ip, message, answer, to_send);
 			break;
 		default:
@@ -304,7 +344,7 @@ protected:
 	 **/
 	Package addChildSignature(const Package &a)
 	{
-		return addSignature(a, message_child);
+		return addSignature(a, ClusterObjectOperation::child);
 	}
 
 	/**
@@ -313,13 +353,13 @@ protected:
 	 **/
 	Package addCurrentSignature(const Package &a)
 	{
-		return addSignature(a, message_current);
+		return addSignature(a, ClusterObjectOperation::current);
 	}
 
 	/**
 	  * Adds the given signature to the package.
 	 **/
-	Package addSignature(const Package &a, const unsigned char type)
+	Package addSignature(const Package &a, const ClusterObjectOperation type)
 	{
 		Package message;
 		message<<type;
@@ -379,16 +419,6 @@ private:
 	  * This is a pointer to the parent of the network
 	 **/
 	ClusterObject *parent;
-
-	/**
-	  * Indicates that the message was sent by a child object
-	 **/
-	const static unsigned char message_child = 's';
-
-	/**
-	  * Indicates that the message was sent by the current object
-	 **/
-	const static unsigned char message_current = 'c';
 
 }; //end class ClusterObject
 
