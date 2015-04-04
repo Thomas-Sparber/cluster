@@ -35,17 +35,18 @@ ListenerSocket* IPv6::createListenerSocket() const
 
 CommunicationSocket* IPv6::createCommunicationSocket(const Address &address) const
 {
-	try {
-		//Decode Address
-		const IPv6Address *a = static_cast<IPv6Address*>(decodeAddress(address.address));
-		if(!a)throw AddressException("Wrong IPv6 Address");
+	CommunicationSocket *socket = nullptr;
 
-		CommunicationSocket *socket = new IPv6CommunicationSocket(*a, port, timeout);
-		delete a;
-		return socket;
+	//Decode Address
+	const IPv6Address *a = static_cast<IPv6Address*>(decodeAddress(address.address));
+	if(!a)throw AddressException("Wrong IPv6 Address");
+
+	try {
+		socket = new IPv6CommunicationSocket(*a, port, timeout);
 	}catch(const CommunicationException &e) {}
 
-	return nullptr;
+	delete a;
+	return socket;
 }
 
 void IPv6::getAddresses(std::list<Address*> &out) const

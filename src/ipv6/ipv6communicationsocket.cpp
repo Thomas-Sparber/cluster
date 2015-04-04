@@ -141,13 +141,13 @@ bool IPv6CommunicationSocket::send(const Package &message)
 	{
 		messageSize = 1;
 		char data = '\0';
-		if(write(fd_client, &messageSize, sizeof(messageSize)) != sizeof(messageSize))return false;
-		if(write(fd_client, &data, messageSize) != int(messageSize))return false;
+		if(::send(fd_client, &messageSize, sizeof(messageSize), MSG_NOSIGNAL) != sizeof(messageSize))return false;
+		if(::send(fd_client, &data, messageSize, MSG_NOSIGNAL) != int(messageSize))return false;
 	}
 	else
 	{
-		if(write(fd_client, &messageSize, sizeof(messageSize)) != sizeof(messageSize))return false;
-		if(write(fd_client, message.getData(), messageSize) != int(messageSize))return false;
+		if(::send(fd_client, &messageSize, sizeof(messageSize), MSG_NOSIGNAL) != sizeof(messageSize))return false;
+		if(::send(fd_client, message.getData(), messageSize, MSG_NOSIGNAL) != int(messageSize))return false;
 	}
 	return true;
 }

@@ -35,17 +35,18 @@ ListenerSocket* IPv4::createListenerSocket() const
 
 CommunicationSocket* IPv4::createCommunicationSocket(const Address &address) const
 {
-	try {
-		//Decode Address
-		const IPv4Address *a = static_cast<IPv4Address*>(decodeAddress(address.address));
-		if(!a)throw AddressException("Wrong IPv4 Address");
+	CommunicationSocket *socket = nullptr;
 
-		CommunicationSocket *socket = new IPv4CommunicationSocket(*a, port, timeout);
-		delete a;
-		return socket;
+	//Decode Address
+	const IPv4Address *a = static_cast<IPv4Address*>(decodeAddress(address.address));
+	if(!a)throw AddressException("Wrong IPv4 Address");
+
+	try {
+		socket = new IPv4CommunicationSocket(*a, port, timeout);
 	}catch(const CommunicationException &e) {}
 
-	return nullptr;
+	delete a;
+	return socket;
 }
 
 void IPv4::getAddresses(std::list<Address*> &out) const
