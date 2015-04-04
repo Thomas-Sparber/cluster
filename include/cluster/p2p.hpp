@@ -113,6 +113,42 @@ public:
 	 **/
 	bool isMember(const Address &address);
 
+	/**
+	  * Sets the number of reconnect retries when
+	  * a member goes offline
+	 **/
+	void setReconnectRetries(unsigned int ui_reconnectRetries)
+	{
+		this->reconnectRetries = ui_reconnectRetries;
+	}
+
+	/**
+	  * Gets the number of reconnect retries when
+	  * a member goes offline
+	 **/
+	unsigned int getReconnectRetries() const
+	{
+		return this->reconnectRetries;
+	}
+
+	/**
+	  * Sets whether to continue working when the p2p
+	  * network has no members
+	 **/
+	void setContinueWithoutMembers(bool b_continueWithoutMembers)
+	{
+		this->continueWithoutMembers = b_continueWithoutMembers;
+	}
+
+	/**
+	  * Gets whether to continue working when the p2p
+	  * network has no members
+	 **/
+	bool getContinueWithoutMembers() const
+	{
+		return this->continueWithoutMembers;
+	}
+
 protected:
 	/**
 	  * This function is called for every Package.
@@ -259,6 +295,19 @@ private:
 	  * to determine the "master" host.
 	 **/
 	unsigned long long startTime;
+
+
+	/**
+	  * The number of reconnect retries when
+	  * a member goes offline
+	 **/
+	unsigned int reconnectRetries;
+
+	/**
+	  * A flag whether to continue working when the p2p
+	  * network has no members
+	 **/
+	bool continueWithoutMembers;
 
 }; // end class p2p
 

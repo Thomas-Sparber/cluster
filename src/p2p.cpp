@@ -100,7 +100,9 @@ p2p::p2p(const Protocol &p) :
 	testAliveThread(nullptr),
 	memberMutex(),
 	memberCallbacks(),
-	startTime()
+	startTime(),
+	reconnectRetries(3),
+	continueWithoutMembers(true)
 {
 	//Measure start time to determine master host
 	struct timeval t;
@@ -215,8 +217,6 @@ void p2p::received_internal(const Address &ip, const Package &message, Package &
 
 void p2p::connectToHosts()
 {
-	cout<<"TestAlive thread started"<<endl;
-
 	time_t t1;
 	time_t t2;
 	time(&t1);
@@ -324,7 +324,7 @@ void p2p::online(const Address &address, unsigned long long otherTime)
 
 	const Client client(address, protocol);
 
-	cout<<"Online "<<address.address<<": "<<otherTime<<", "<<startTime<<endl;
+//	cout<<"Online "<<address.address<<": "<<otherTime<<", "<<startTime<<endl;
 
 	//Remember host that it needs to answer its members
 	otherPeersToCheckMutex.lock();
@@ -398,7 +398,7 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 	memberMutex.unlock();
 
 	//At least one more than half of the members need to respond
-	while(toSend.size()+1 > (members.size()+1)/2)
+	while((!continueWithoutMembers || !toSend.empty()) && toSend.size()+1 > (members.size()+1)/2)
 	{
 		for(auto it = toSend.begin(); it != toSend.end(); it++)
 		{
@@ -432,7 +432,7 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 					auto temp = it--;
 					toSend.erase(temp);
 				}
-				else testConnection(it->getAddress(), 3);	//TODO
+				else testConnection(it->getAddress(), reconnectRetries);
 			}
 
 			//Wait for some time to let clients respond
@@ -456,7 +456,6 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 			unsigned long long otherTime;
 			message>>otherTime;
 			online(ip, otherTime);
-			cout<<"Online "<<ip.address<<endl;
 		}
 		to_send<<p2pOperation::echo_response_message;
 		to_send<<startTime;
@@ -468,7 +467,6 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 			unsigned long long otherTime;
 			message>>otherTime;
 			online(ip, otherTime);
-			cout<<"Online from response "<<ip.address<<endl;
 		}
 		return true;
 	case p2pOperation::other_peers:
@@ -493,7 +491,7 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 		{
 			if(Address *a = protocol.decodeAddress(address))
 			{
-				if(!isOwnAddress(*a) && testConnection(*a, 1))tested.push_back(a);
+				if(!isOwnAddress(*a) && !isMember(*a) && testConnection(*a, 1))tested.push_back(a);
 				else delete a;
 			}
 		}
