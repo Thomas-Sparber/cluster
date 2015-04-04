@@ -41,19 +41,19 @@ int main(int /*argc*/, char* /*args*/[])
 	ClusterList<int> v(&network);
 	ClusterMutex m(&network);
 
-	cout<<"Network structure:"<<endl;
-	network.printWholeStructure();
+	cout<<"Network structure:"<<endl<<network.getWholeStructure();
 
 	//thread t(controller, &v);
 	srandom(unsigned(time(nullptr)));
 	while(running)
 	{
-		m.lock();	//TODO only works with members
+		m.lock();
 
 		int number = 0;
 		if(v.size() != 0)number = v.get(v.size()-1);
 		number++;
 
+		//cout<<"Main: adding "<<number<<endl;
 		v.add(number);
 
 		if(v.size() > 2)
@@ -66,9 +66,8 @@ int main(int /*argc*/, char* /*args*/[])
 
 		m.unlock();
 
-		usleep(random() % 100000);
+		usleep(random() % 1000000);
 	}
-	cout<<"Quitting"<<endl;
 	//t.join();
 
 	network.close();

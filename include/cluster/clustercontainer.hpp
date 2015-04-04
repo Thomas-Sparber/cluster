@@ -13,6 +13,8 @@
 #include <cluster/clustercontainerfunctions.hpp>
 #include <vector>
 #include <list>
+#include <mutex>
+#include <iostream>
 
 namespace cluster
 {
@@ -91,7 +93,8 @@ public:
 	 **/
 	ClusterContainer(ClusterObject *network, unsigned int ui_maxPackagesToRemember=100) :
 		ClusterObjectSerialized(network, ui_maxPackagesToRemember),
-		v()
+		v(),
+		containerMutex()
 	{}
 
 	/**
@@ -189,6 +192,8 @@ protected:
 		T t;
 		Index i;
 
+		containerMutex.lock();
+
 		//Extract messages
 		while(message>>type)
 		{
@@ -198,6 +203,7 @@ protected:
 			//Perform messages
 			success = perform(type, t, i) && success;
 		}
+		containerMutex.unlock();
 		return success;
 	}
 
@@ -220,6 +226,8 @@ protected:
 		ClusterContainerOperation type;
 		T t;
 		Index i;
+
+		containerMutex.lock();
 
 		//Extracting all packages
 		bool first = true;
@@ -245,7 +253,7 @@ protected:
 			previousI = i;
 			previousT = t;
 		}
-
+		containerMutex.unlock();
 		return success;
 	}
 
@@ -272,12 +280,14 @@ protected:
 	 **/
 	virtual void rebuild(const Package &out)
 	{
+		containerMutex.lock();
 		v.clear();
 		T t;
 		while(out>>t)
 		{
 			v.push_back(t);
 		}
+		containerMutex.unlock();
 	}
 
 private:
@@ -288,12 +298,16 @@ private:
 	 **/
 	bool doAndSend(ClusterContainerOperation type, const T &t, const Index &i)
 	{
+		bool success = false;
+		containerMutex.lock();
 		if(send(type, t, i))
 		{
+std::cout<<"OK -> ";
 			//Only performing operation after approvement of network
-			return perform(type, t, i);
+			success = perform(type, t, i);
 		}
-		return false;
+		containerMutex.unlock();
+		return success;
 	}
 
 	/**
@@ -324,6 +338,12 @@ private:
 	  * This Container stores the data
 	 **/
 	Container v;
+
+	/**
+	  * This mutex is used to synchronize access
+	  * to the container
+	 **/
+	std::mutex containerMutex;
 
 }; // end class ClusterContainer
 

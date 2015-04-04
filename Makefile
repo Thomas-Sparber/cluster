@@ -1,8 +1,11 @@
 CXX=g++-4.7
-CFLAGS=-c -g -Wall -Wextra -Weffc++ -std=c++11 -I./include -pedantic -Wdouble-promotion -Wuninitialized -fipa-pure-const -Wsuggest-attribute=const -Wsuggest-attribute=noreturn  -Wtrampolines -Wfloat-equal  -Wunsafe-loop-optimizations -Wc++11-compat -Wcast-qual -Wcast-align -Wzero-as-null-pointer-constant -Wconversion -Wlogical-op -Wredundant-decls -Wshadow
+CFLAGS=-c -g -Wall -Wextra -Weffc++ -std=c++11 -I./include -pedantic -Wdouble-promotion -Wuninitialized -fipa-pure-const -Wtrampolines -Wfloat-equal  -Wunsafe-loop-optimizations -Wc++11-compat -Wcast-qual -Wcast-align -Wzero-as-null-pointer-constant -Wconversion -Wlogical-op -Wredundant-decls -Wshadow
 LDFLAGS=-lpthread -L./ -lcluster
 SOURCES_CLUSTER= \
 	src/client.cpp \
+	src/clustermutex.cpp \
+	src/clusterobject.cpp \
+	src/clusterobjectserialized.cpp \
 	src/p2p.cpp \
 	src/server.cpp \
 	src/ipv4/ipv4.cpp \
@@ -55,7 +58,7 @@ documentation:
 
 10_0_0_202:
 	$(call linkecho, "Building 10.0.0.202")
-	@rsync -r --delete --size-only /home/cubie/cluster/include /home/cubie/cluster/src /home/cubie/cluster/addresses.txt /home/cubie/cluster/Makefile pi@10.0.0.202:/home/pi/cluster/
+	@rsync -r --delete --checksum /home/cubie/cluster/include /home/cubie/cluster/src /home/cubie/cluster/addresses.txt /home/cubie/cluster/Makefile pi@10.0.0.202:/home/pi/cluster/
 	@ssh -t pi@10.0.0.202 /home/pi/buildcluster
 
 main: $(OBJECTS_MAIN) libcluster.a

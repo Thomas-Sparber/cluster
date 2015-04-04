@@ -65,7 +65,6 @@ Server::~Server()
 
 void Server::closeConnection()
 {
-	cout<<"Closing server socket"<<endl;
 	delete socket;
 }
 
@@ -96,7 +95,6 @@ void Server::serverFunction()
 			while(running && !socket);
 		}
 	}
-	cout<<"Server closed"<<endl;
 }
 
 void Server::handle()

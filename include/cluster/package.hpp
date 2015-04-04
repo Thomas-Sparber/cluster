@@ -217,6 +217,21 @@ public:
 	}
 
 	/**
+	  * Checks whether the Package is empty
+	  * or contains only 0s
+	 **/
+	bool emptyOrNull() const
+	{
+		if(empty())return true;
+
+		for(const char c : data)
+		{
+			if(c != '\0')return false;
+		}
+		return true;
+	}
+
+	/**
 	  * Returns the data as an array of bytes
 	 **/
 	const unsigned char* getData() const
