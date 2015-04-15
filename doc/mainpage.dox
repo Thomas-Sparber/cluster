@@ -1,0 +1,52 @@
+/**
+  * \mainpage Cluster
+  * =================
+  *
+  * This library provides functions to program in a cluster environment using a Peer-To-Peer
+  * network as backend. The Peer-To-Peer (P2P) network is responsible for the communication
+  * and maintenance of the members of the network.
+  *
+  * The P2P network provides several functions to control the behavior. It is for example
+  * posssible to add address ranges to scan for members.
+  *
+  * All objects which are able to work in a cluster have its common base ClusterObject.
+  * Examples of such objects are ClusterMutex or ClusterContainer.
+  *
+  * ClusterObjectSerialized is another class which can be used as base class for other objects.
+  * ClusterObjectSerialized makes sure that all the packages are processed in the correct
+  * order. ClusterContainer uses ClusterObjectSerialized to perform operations in the correct
+  * order.
+  *
+  *
+  * Network structure
+  * -----------------
+  *
+  * TODO
+  *  - ClusterMutex
+  *  - ClusterContainer
+  *  - P2P
+  *
+  *
+  * ClusterObject
+  * -------------
+  *
+  * TODO
+  *
+  *
+  * ClusterObjectSerialized
+  * -----------------------
+  *
+  * TODO
+  *
+  *
+  * ClusterMutex
+  * ------------
+  *
+  * TODO
+  *
+  *
+  * ClusterContainer
+  * ----------------
+  *
+  * TODO
+ **/
