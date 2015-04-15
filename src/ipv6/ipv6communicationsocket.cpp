@@ -164,6 +164,6 @@ bool IPv6CommunicationSocket::receive(Package *out)
 	if(read(fd_client, &messageSize, sizeof(messageSize)) < 0)return false;
 	vector<unsigned char> data(messageSize);
 	if(read(fd_client, &data[0], messageSize) < 0)return false;
-	if(out)out->append(&data[0], messageSize);
+	if(out)out->write(&data[0], messageSize);
 	return true;
 }

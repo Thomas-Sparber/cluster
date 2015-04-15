@@ -78,13 +78,13 @@ protected:
 	  * the network. It checks whether the new member is the master
 	  * and rebuilds from it if necessary.
 	 **/
-	virtual void memberOnline(const Address &ip, bool isMaster);
+	virtual void memberOnline(const Address &ip, bool isMaster) override;
 
 	/**
 	  * This function is called whenever a memeber is offline.
 	  * It is not used by ClusterObjectSerialized.
 	 **/
-	virtual void memberOffline(const Address &ip);
+	virtual void memberOffline(const Address &ip) override;
 
 	/**
 	  * This function sends the given package to the network.
@@ -92,12 +92,12 @@ protected:
 	  * package and returns false because the object is currently
 	  * in the phase of rebuilding.
 	 **/
-	virtual bool sendPackage(const Package &a, Package *answer);
+	virtual bool sendPackage(const Package &a, AnswerPackage *answer) override;
 
 	/**
 	  * This function asks the given member of the network.
 	 **/
-	virtual bool askPackage(const Address &ip, const Package &a, Package *answer);
+	virtual bool askPackage(const Address &ip, const Package &a, Package *answer) override;
 
 	/**
 	  * This function is called for every Package theat is
@@ -105,7 +105,7 @@ protected:
 	  * this function from CLusterObject to ensure the correct
 	  * order of the packages
 	 **/
-	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &to_send);
+	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &to_send) override;
 
 private:
 	/**

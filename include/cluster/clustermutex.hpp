@@ -87,7 +87,7 @@ public:
 	/**
 	  * Returns the type of ClusterObject
 	 **/
-	virtual std::string getType() const
+	virtual std::string getType() const override
 	{
 		return "Clustermutex";
 	}
@@ -97,7 +97,7 @@ protected:
 	  * This function is called for every Package
 	  * which is received for the ClusterMutex.
 	 **/
-	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &to_send);
+	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &to_send) override;
 
 private:
 	/**

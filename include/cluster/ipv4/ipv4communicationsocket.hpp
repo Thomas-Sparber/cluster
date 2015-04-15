@@ -56,13 +56,13 @@ public:
 	/**
 	  * Sends the given Package to the target Address.
 	 **/
-	virtual bool send(const Package &data);
+	virtual bool send(const Package &data) override;
 
 	/**
 	  * Receives a Package from the target Address
 	  * and stores is in out.
 	 **/
-	virtual bool receive(Package *out);
+	virtual bool receive(Package *out) override;
 
 	/**
 	  * Returns the target port

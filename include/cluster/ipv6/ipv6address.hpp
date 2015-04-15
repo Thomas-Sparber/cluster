@@ -36,13 +36,13 @@ public:
 	/**
 	  * Creates a copy of the Address
 	 **/
-	virtual Address* clone() const;
+	virtual Address* clone() const override;
 
 	/**
 	  * Increases the Address by one interval
 	  * this is used e.g. to scan address ranges
 	 **/
-	virtual void increase();
+	virtual void increase() override;
 
 	/**
 	  * Returns whether the current address
@@ -50,7 +50,7 @@ public:
 	  * the Address is pointing to the current
 	  * computer. e.g. 127.0.0.1
 	 **/
-	virtual bool isLoopback() const;
+	virtual bool isLoopback() const override;
 
 	/**
 	  * Converts an Address in string representation

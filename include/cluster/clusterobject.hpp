@@ -10,6 +10,7 @@
 #define CLUSTEROBJECT_HPP
 
 #include <cluster/package.hpp>
+#include <cluster/answerpackage.hpp>
 #include <string>
 
 namespace cluster
@@ -97,7 +98,7 @@ public:
 	  * Packs the given object in a package and sends it
 	 **/
 	template <class A>
-	bool send(const A &a, Package *answer=nullptr)
+	bool send(const A &a, AnswerPackage *answer)
 	{
 		Package message;
 		message<<a;
@@ -108,7 +109,7 @@ public:
 	  * Packs the given objects in a package and sends them
 	 **/
 	template <class A, class B>
-	bool send(const A &a, const B &b, Package *answer=nullptr)
+	bool send(const A &a, const B &b, AnswerPackage *answer)
 	{
 		Package message;
 		message<<a;
@@ -120,7 +121,7 @@ public:
 	  * Packs the given objects in a package and sends them
 	 **/
 	template <class A, class B, class C>
-	bool send(const A &a, const B &b, const C &c, Package *answer=nullptr)
+	bool send(const A &a, const B &b, const C &c, AnswerPackage *answer)
 	{
 		Package message;
 		message<<a;
@@ -134,7 +135,7 @@ public:
 	  * to the given address only
 	 **/
 	template <class A>
-	bool ask(const Address &ip, const A &a, Package *answer=nullptr)
+	bool ask(const Address &ip, const A &a, Package *answer)
 	{
 		Package message;
 		message<<a;
@@ -146,7 +147,7 @@ public:
 	  * to the given address only
 	 **/
 	template <class A, class B>
-	bool ask(const Address &ip, const A &a, const B &b, Package *answer=nullptr)
+	bool ask(const Address &ip, const A &a, const B &b, Package *answer)
 	{
 		Package message;
 		message<<a;
@@ -159,7 +160,7 @@ public:
 	  * to the given address only
 	 **/
 	template <class A, class B, class C>
-	bool ask(const Address &ip, const A &a, const B &b, const C &c, Package *answer=nullptr)
+	bool ask(const Address &ip, const A &a, const B &b, const C &c, Package *answer)
 	{
 		Package message;
 		message<<a;
@@ -205,7 +206,7 @@ protected:
 	  * is received for the current object (at the other
 	  * side(s))
 	 **/
-	virtual bool sendPackage(const Package &a, Package *answer)
+	virtual bool sendPackage(const Package &a, AnswerPackage *answer)
 	{
 		return ClusterObject_send(addCurrentSignature(a), answer);
 	}
@@ -226,7 +227,7 @@ protected:
 	  * to send a package. The top parent needs to
 	  * override this function to actually send the message.
 	 **/
-	virtual bool ClusterObject_send(const Package &a, Package *answer)
+	virtual bool ClusterObject_send(const Package &a, AnswerPackage *answer)
 	{
 		return parent->ClusterObject_send(addChildSignature(a), answer);
 	}

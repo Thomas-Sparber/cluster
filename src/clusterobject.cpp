@@ -42,7 +42,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, ClusterObjectOperation &t)
 	{
-		return p.getAndNext(reinterpret_cast<unsigned char&>(t));
+		return p>>reinterpret_cast<unsigned char&>(t);
 	}
 
 
@@ -53,7 +53,7 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const ClusterObjectOperation &t)
 	{
-		p.append(reinterpret_cast<const unsigned char&>(t));
+		p<<reinterpret_cast<const unsigned char&>(t);
 	}
 
 

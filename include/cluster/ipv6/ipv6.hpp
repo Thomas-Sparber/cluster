@@ -48,26 +48,26 @@ public:
 	/**
 	  * Creates an IPv6 ListenerSocket
 	 **/
-	virtual ListenerSocket* createListenerSocket() const;
+	virtual ListenerSocket* createListenerSocket() const override;
 
 	/**
 	  * Creates an IPv6 CommunicationSocket to
 	  * communicate with the given Address which must
 	  * be an IPv6Address or IPv4Address
 	 **/
-	virtual CommunicationSocket* createCommunicationSocket(const Address &address) const;
+	virtual CommunicationSocket* createCommunicationSocket(const Address &address) const override;
 
 	/**
 	  * Returns the IPv6Addresses of the current
 	  * computer
 	 **/
-	virtual void getAddresses(std::list<Address*> &out) const;
+	virtual void getAddresses(std::list<Address*> &out) const override;
 
 	/**
 	  * Converts the given Address in string representation
 	  * to an IPv6Address
 	 **/
-	virtual Address* decodeAddress(const std::string &address) const;
+	virtual Address* decodeAddress(const std::string &address) const override;
 
 	/**
 	  * Gets the timeout for establishing a connection

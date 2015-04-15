@@ -40,7 +40,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, ClusterMutexOperation &t)
 	{
-		return p.getAndNext(reinterpret_cast<unsigned char&>(t));
+		return p>>reinterpret_cast<unsigned char&>(t);
 	}
 
 
@@ -51,7 +51,7 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const ClusterMutexOperation &t)
 	{
-		p.append(reinterpret_cast<const unsigned char&>(t));
+		p<<reinterpret_cast<const unsigned char&>(t);
 	}
 
 } //end namespace cluster
@@ -101,24 +101,29 @@ bool ClusterMutex::try_lock()
 	}
 
 	//Sending the request to the cluster
-	Package response;
+	AnswerPackage response;
 	send(ClusterMutexOperation::lock, &response);
 
 	bool rejected = false;
-	unsigned char c;
-	while(response>>c)
+	for(const auto &package : response)
 	{
-		if(c == 'x')
+		unsigned char c;
+		while(package.second>>c)
 		{
-			rejected = true;
-			break;
+			if(c == 'x')
+			{
+				rejected = true;
+				break;
+			}
 		}
+
+		if(rejected)break;
 	}
 
 	if(rejected)	//Mutex can't be locked if one clusternode returns answer
 	{
 		//Send unlock request
-		send(ClusterMutexOperation::unlock, &response);
+		send(ClusterMutexOperation::unlock, nullptr);
 
 		tryLock = false;
 		return false;
@@ -132,7 +137,7 @@ bool ClusterMutex::try_lock()
 
 void ClusterMutex::unlock()
 {
-	send(ClusterMutexOperation::unlock);
+	send(ClusterMutexOperation::unlock, nullptr);
 	selfLocked = false;
 }
 

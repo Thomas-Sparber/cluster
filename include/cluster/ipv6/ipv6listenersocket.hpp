@@ -42,13 +42,13 @@ public:
 	  * Cheks for the given timesout if a
 	  * client is waiting for a connection.
 	 **/
-	virtual bool poll(unsigned int time);
+	virtual bool poll(unsigned int time) override;
 
 	/**
 	  * Accepts the client connection. Doesn't
 	  * return until the connection is established
 	 **/
-	virtual CommunicationSocket* listen();
+	virtual CommunicationSocket* listen() override;
 
 	/**
 	  * Returns the port on which to listen

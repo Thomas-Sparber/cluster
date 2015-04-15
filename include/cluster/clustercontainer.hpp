@@ -51,7 +51,7 @@ enum class ClusterContainerOperation : unsigned char
 template <>
 inline bool operator>>(const Package &p, ClusterContainerOperation &t)
 {
-	return p.getAndNext(reinterpret_cast<unsigned char&>(t));
+	return p>>reinterpret_cast<unsigned char&>(t);
 }
 
 
@@ -62,7 +62,7 @@ inline bool operator>>(const Package &p, ClusterContainerOperation &t)
 template <>
 inline void operator<<(Package &p, const ClusterContainerOperation &t)
 {
-	p.append(reinterpret_cast<const unsigned char&>(t));
+	p<<reinterpret_cast<const unsigned char&>(t);
 }
 
 /**
@@ -169,59 +169,20 @@ public:
 	/**
 	  * Returns the type of ClusterObject
 	 **/
-	virtual std::string getType() const
+	virtual std::string getType() const override
 	{
-		return "Clustercontainer";
+		return "ClusterContainer";
 	}
 
 protected:
-	/**
-	  * This fucntion is called whenever a package
-	  * is received from the network. This function
-	  * calls the received method of the ClusterObjectSerialized
-	  * to ensure the correct order.
-	 **/
-	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &to_send)
-	{
-		//Call receved function of ClusterObjectSerialized.
-		//Return true if message is consumed by the ClusterObjectSerialized
-		if(ClusterObjectSerialized::received(ip, message, answer, to_send))return true;
-
-		bool success = true;
-		ClusterContainerOperation type;
-		T t;
-		Index i;
-
-		containerMutex.lock();
-
-		//Extract messages
-		while(message>>type)
-		{
-			if(!(message>>t)){ success = false; break; }
-			if(!(message>>i)){ success = false; break; }
-
-			//Perform messages
-			success = perform(type, t, i) && success;
-		}
-		containerMutex.unlock();
-		return success;
-	}
-
 	/**
 	  * Overrides the function from ClusterObjectSerialized.
 	  * This function is called whenever a package was missed
 	  * and needs to be performed.
 	 **/
-	virtual bool perform(const Package &message)
+	virtual bool perform(const Package &message) override
 	{
 		bool success = true;
-
-		//Used to remember the previous objects of the package
-		//and to check if the packages are identical from
-		//all members of the network.
-		ClusterContainerOperation previousType;
-		T previousT;
-		unsigned int previousI;
 
 		ClusterContainerOperation type;
 		T t;
@@ -230,28 +191,12 @@ protected:
 		containerMutex.lock();
 
 		//Extracting all packages
-		bool first = true;
 		while(message>>type)
 		{
 			if(!(message>>t)){ success = false; break; }
 			if(!(message>>i)){ success = false; break; }
 
-			if(first)
-			{
-				first = false;
-				success = perform(type, t, i) && success;
-			}
-			else
-			{
-				//Check if all packages are identical
-				if(previousType != type)success = false;
-				if(previousI != i)success = false;
-				if(previousT != t)success = false;
-			}
-
-			previousType = type;
-			previousI = i;
-			previousT = t;
+			success = perform(type, t, i) && success;
 		}
 		containerMutex.unlock();
 		return success;
@@ -264,7 +209,7 @@ protected:
 	  * with the data so that the rebuild function can rebuild the
 	  * entire structure using this package.
 	 **/
-	virtual void getRebuildPackage(Package &out)
+	virtual void getRebuildPackage(Package &out) override
 	{
 		//Adding every element to the package
 		for(const T &t : v)
@@ -278,7 +223,7 @@ protected:
 	  * This function is called whenever the structure needs
 	  * to be rebuilt entirely.
 	 **/
-	virtual void rebuild(const Package &out)
+	virtual void rebuild(const Package &out) override
 	{
 		containerMutex.lock();
 		v.clear();
@@ -300,7 +245,7 @@ private:
 	{
 		bool success = false;
 		containerMutex.lock();
-		if(send(type, t, i))
+		if(send(type, t, i, nullptr))
 		{
 std::cout<<"OK -> ";
 			//Only performing operation after approvement of network

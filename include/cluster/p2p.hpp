@@ -59,7 +59,7 @@ public:
 	  * and adds the given MemberCallback to the list of
 	  * member callbacks.
 	 **/
-	virtual void addMemberCallback(MemberCallback *memberCallback)
+	virtual void addMemberCallback(MemberCallback *memberCallback) override
 	{
 		this->memberCallbacks.push_back(memberCallback);
 	}
@@ -69,7 +69,7 @@ public:
 	  * and removes the given MemberCallback from the list of
 	  * member callbacks.
 	 **/
-	virtual void removeMemberCallback(MemberCallback *memberCallback)
+	virtual void removeMemberCallback(MemberCallback *memberCallback) override
         {
 		this->memberCallbacks.remove(memberCallback);
         }
@@ -77,7 +77,7 @@ public:
 	/**
 	  * Returns the type of ClusterObject
 	 **/
-	virtual std::string getType() const
+	virtual std::string getType() const override
 	{
 		return "P2P";
 	}
@@ -153,7 +153,7 @@ protected:
 	/**
 	  * This function is called for every Package.
 	 **/
-	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &send);
+	virtual bool received(const Address &ip, const Package &message, Package &answer, Package &send) override;
 
 private:
 	/**
@@ -210,7 +210,7 @@ private:
 	  * when a member is asked. This function actually asks
 	  * the member
 	 **/
-	virtual bool ClusterObject_ask(const Address &ip, const Package &message, Package *answer);
+	virtual bool ClusterObject_ask(const Address &ip, const Package &message, Package *answer) override;
 
 	/**
 	  * Overrides the function from ClusterObject.
@@ -218,7 +218,7 @@ private:
 	  * when a package is snet. This function actually
 	  *sends the package
 	 **/
-	virtual bool ClusterObject_send(const Package &message, Package *answer);
+	virtual bool ClusterObject_send(const Package &message, AnswerPackage *answer) override;
 
 private:
 	/**

@@ -11,6 +11,7 @@
 #include <cluster/prototypes/protocol.hpp>
 #include <cluster/package.hpp>
 #include <assert.h>
+#include <iostream>
 
 using namespace std;
 using namespace cluster;
@@ -48,6 +49,7 @@ bool Client::send(const Package &message, Package *out) const
 	//Create communication socket
 	if(CommunicationSocket *s = protocol->createCommunicationSocket(*address))
 	{
+//cout<<"Sending "<<message.toString()<<endl;
 		bool success = s->send(message) && s->receive(out);
 		delete s;
 		return success;
