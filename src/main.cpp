@@ -12,15 +12,19 @@
 #include <cluster/p2p.hpp>
 #include <cluster/clustercontainer.hpp>
 #include <cluster/clustermutex.hpp>
+#include <cluster/database/database.hpp>
 #include <signal.h>
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <sys/time.h>
 
 using namespace std;
 using namespace cluster;
 
+void testDatabase(const string &ip1, const string &ip2);
+void testClusterContainer(const string &ip1, const string &ip2);
 void signalHandler(int signal);
 template<class Index, class Container> void controller(const ClusterContainer<Index, int, Container> *c);
 
@@ -35,9 +39,56 @@ int main(int /*argc*/, char* /*args*/[])
 	in>>ip1;
 	in>>ip2;
 
+	//testClusterContainer(ip1, ip2);
+	testDatabase(ip1, ip2);
+}
+
+void testDatabase(const string &ip1, const string &ip2)
+{
 	IPv4 p(1234);
 	p2p network(p);
-	if(ip1.size() && ip2.size())network.addAddressRange(IPv4Address(ip1), IPv4Address(ip2));
+	if(!ip1.empty() && !ip2.empty())network.addAddressRange(IPv4Address(ip1), IPv4Address(ip2));
+	Database db(&network);
+
+	cout<<"Network structure:"<<endl<<network.getWholeStructure();
+
+	string input;
+	while(running)
+	{
+		cout<<"sql> "<<flush;
+		getline(cin, input);
+
+		if(input == "quit")
+		{
+			running = false;
+			break;
+		}
+
+		if(!input.empty())
+		{
+			struct timeval t1;
+			struct timeval t2;
+			gettimeofday(&t1, nullptr);
+			const SQLResult &res = db.execute(input);
+			gettimeofday(&t2, nullptr);
+			if(res.wasSuccess())
+			{
+				const double time = (t2.tv_sec-t1.tv_sec) + double(t2.tv_usec-t1.tv_usec)/1000000;
+				cout<<"Query executed successfully: "<<time<<" s"<<endl;
+			}
+			else
+			{
+				cout<<res.getErrorMessage()<<endl;
+			}
+		}
+	}
+}
+
+void testClusterContainer(const string &ip1, const string &ip2)
+{
+	IPv4 p(1234);
+	p2p network(p);
+	if(!ip1.empty() && !ip2.empty())network.addAddressRange(IPv4Address(ip1), IPv4Address(ip2));
 	ClusterList<int> v(&network);
 	ClusterMutex m(&network);
 

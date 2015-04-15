@@ -70,7 +70,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, p2pOperation &t)
 	{
-		return p.getAndNext(reinterpret_cast<unsigned char&>(t));
+		return p>>reinterpret_cast<unsigned char&>(t);
 	}
 
 
@@ -81,7 +81,7 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const p2pOperation &t)
 	{
-		p.append(reinterpret_cast<const unsigned char&>(t));
+		p<<reinterpret_cast<const unsigned char&>(t);
 	}
 
 } //end namespace cluster
@@ -230,6 +230,7 @@ void p2p::connectToHosts()
 		if(it == addressRanges.cend())
 		{
 			sleep(1);
+			it = addressRanges.cbegin();
 			continue;
 		}
 
@@ -275,10 +276,10 @@ void p2p::connectToHosts()
 
 bool p2p::testConnection(const Address &ip, unsigned int retry)
 {
-	if(members.empty())
+	/*if(members.empty())
 	{
 		cout<<"Trying connection to "<<ip.address<<endl;
-	}
+	}*/
 
 	for(unsigned int i = 0; i < retry; i++)
 	{
@@ -288,7 +289,7 @@ bool p2p::testConnection(const Address &ip, unsigned int retry)
 			sleep(1);
 		}
 
-		if(ask(ip, p2pOperation::echo_message, startTime))return true;
+		if(ask(ip, p2pOperation::echo_message, startTime, nullptr))return true;
 	}
 	offline(ip);
 	return false;
@@ -337,7 +338,7 @@ void p2p::online(const Address &address, unsigned long long otherTime)
 	memberMutex.unlock();
 
 	//Ask for other peers
-	ask(address, p2pOperation::other_peers);
+	ask(address, p2pOperation::other_peers, nullptr);
 
 	//Notify callbacks
 	for(auto it = memberCallbacks.begin(); it != memberCallbacks.end(); it++)
@@ -362,7 +363,7 @@ void p2p::offline(const Address &address)
 	memberMutex.unlock();
 }
 
-bool p2p::ClusterObject_send(const Package &message, Package *answer)
+bool p2p::ClusterObject_send(const Package &message, AnswerPackage *answer)
 {
 	//Other peers need to be checked before sending
 	otherPeersToCheckMutex.lock();
@@ -411,7 +412,19 @@ bool p2p::ClusterObject_send(const Package &message, Package *answer)
 				continue;
 			}
 
-			if(it->send(message, answer))
+			bool success;
+			if(answer)
+			{
+				Package temp_answer;
+				success = it->send(message, &temp_answer);
+				if(success)answer->add(it->getAddress(), temp_answer);
+			}
+			else
+			{
+				success = it->send(message, nullptr);
+			}
+
+			if(success)
 			{
 				auto temp = it--;
 				toSend.erase(temp);

@@ -6,6 +6,10 @@ SOURCES_CLUSTER= \
 	src/clustermutex.cpp \
 	src/clusterobject.cpp \
 	src/clusterobjectserialized.cpp \
+	src/database/database.cpp \
+	src/database/sqlquery.cpp \
+	src/database/sqlresult.cpp \
+	src/database/table.cpp \
 	src/p2p.cpp \
 	src/server.cpp \
 	src/ipv4/ipv4.cpp \
