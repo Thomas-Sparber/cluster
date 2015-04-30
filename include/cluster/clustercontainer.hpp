@@ -23,7 +23,7 @@ namespace cluster
   * This enum defines the actions of the
   * ClusterContainer
  **/
-enum class ClusterContainerOperation : unsigned char
+enum class ClusterContainerOperation : char
 {
 	/**
 	  * This action defines to add an element
@@ -51,7 +51,7 @@ enum class ClusterContainerOperation : unsigned char
 template <>
 inline bool operator>>(const Package &p, ClusterContainerOperation &t)
 {
-	return p>>reinterpret_cast<unsigned char&>(t);
+	return p>>reinterpret_cast<char&>(t);
 }
 
 
@@ -62,7 +62,7 @@ inline bool operator>>(const Package &p, ClusterContainerOperation &t)
 template <>
 inline void operator<<(Package &p, const ClusterContainerOperation &t)
 {
-	p<<reinterpret_cast<const unsigned char&>(t);
+	p<<reinterpret_cast<const char&>(t);
 }
 
 /**
@@ -131,7 +131,7 @@ public:
 	 **/
 	const T& get(const Index &i) const
 	{
-		return getObjectFromContainer<T>(v, i);
+		return getObjectFromContainer<Index, T>(v, i);
 	}
 
 	/**
@@ -153,7 +153,7 @@ public:
 	/**
 	  * Gets the size of the ClusterContainer
 	 **/
-	unsigned int size() const
+	std::size_t size() const
 	{
 		return v.size();
 	}
@@ -180,7 +180,7 @@ protected:
 	  * This function is called whenever a package was missed
 	  * and needs to be performed.
 	 **/
-	virtual bool perform(const Package &message) override
+	virtual bool perform(const Address &/*address*/, const Package &message, Package &/*answer*/, Package &/*toSend*/) override
 	{
 		bool success = true;
 
@@ -209,13 +209,10 @@ protected:
 	  * with the data so that the rebuild function can rebuild the
 	  * entire structure using this package.
 	 **/
-	virtual void getRebuildPackage(Package &out) override
+	virtual void getRebuildPackage(Package &out) const override
 	{
 		//Adding every element to the package
-		for(const T &t : v)
-		{
-			out<<t;
-		}
+		out<<v;
 	}
 
 	/**
@@ -223,15 +220,10 @@ protected:
 	  * This function is called whenever the structure needs
 	  * to be rebuilt entirely.
 	 **/
-	virtual void rebuild(const Package &out) override
+	virtual void rebuild(const Package &out, const Address &/*address*/) override
 	{
 		containerMutex.lock();
-		v.clear();
-		T t;
-		while(out>>t)
-		{
-			v.push_back(t);
-		}
+		out>>v;
 		containerMutex.unlock();
 	}
 
@@ -296,13 +288,13 @@ private:
   * The ClusterList represents a ClusterContainer
   * which uses an std::list for the internal storage
  **/
-template<class T, class Index=unsigned int> using ClusterList = ClusterContainer<Index, T, std::list<T> >;
+template<class T, class Index=std::size_t> using ClusterList = ClusterContainer<Index, T, std::list<T> >;
 
 /**
   * The ClusterList represents a ClusterContainer
   * which uses an std::vector for the internal storage
  **/
-template<class T, class Index=unsigned int> using ClusterVector = ClusterContainer<Index, T, std::vector<T> >;
+template<class T, class Index=std::size_t> using ClusterVector = ClusterContainer<Index, T, std::vector<T> >;
 
 } //end namespace cluster
 

@@ -48,7 +48,7 @@ void testDatabase(const string &ip1, const string &ip2)
 	IPv4 p(1234);
 	p2p network(p);
 	if(!ip1.empty() && !ip2.empty())network.addAddressRange(IPv4Address(ip1), IPv4Address(ip2));
-	Database db(&network);
+	Database db(&network, "test", 2, 2);
 
 	cout<<"Network structure:"<<endl<<network.getWholeStructure();
 
@@ -69,10 +69,25 @@ void testDatabase(const string &ip1, const string &ip2)
 			struct timeval t1;
 			struct timeval t2;
 			gettimeofday(&t1, nullptr);
-			const SQLResult &res = db.execute(input);
+			SQLResult res = db.execute(input);
 			gettimeofday(&t2, nullptr);
 			if(res.wasSuccess())
 			{
+				if(res.hasResult())
+				{
+					vector<DataValue> row(res.colsCount());
+					while(res.fetchRow(db, row))
+					{
+						bool first = true;
+						for(unsigned int i = 0; i < row.size(); ++i)
+						{
+							if(first)first = false;
+							else cout<<", ";
+							cout<<row[i].toString();
+						}
+						cout<<endl;
+					}
+				}
 				const double time = (t2.tv_sec-t1.tv_sec) + double(t2.tv_usec-t1.tv_usec)/1000000;
 				cout<<"Query executed successfully: "<<time<<" s"<<endl;
 			}
@@ -95,13 +110,13 @@ void testClusterContainer(const string &ip1, const string &ip2)
 	cout<<"Network structure:"<<endl<<network.getWholeStructure();
 
 	//thread t(controller, &v);
-	srandom(unsigned(time(nullptr)));
+	srand(unsigned(time(nullptr)));
 	while(running)
 	{
 		m.lock();
 
 		int number = 0;
-		if(v.size() != 0)number = v.get(v.size()-1);
+		if(v.size() != 0)number = (int)v.get(v.size()-1);
 		number++;
 
 		//cout<<"Main: adding "<<number<<endl;
@@ -117,7 +132,7 @@ void testClusterContainer(const string &ip1, const string &ip2)
 
 		m.unlock();
 
-		usleep(random() % 1000000);
+		usleep(rand() % 10000);
 	}
 	//t.join();
 

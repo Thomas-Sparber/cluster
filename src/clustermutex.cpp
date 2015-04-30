@@ -20,7 +20,7 @@ namespace cluster
 	  * This enum defines the actions of the
 	  * ClusterMutex
 	 **/
-	enum class ClusterMutexOperation : unsigned char
+	enum class ClusterMutexOperation : char
 	{
 		/**
 		  * Locks the mutex
@@ -40,7 +40,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, ClusterMutexOperation &t)
 	{
-		return p>>reinterpret_cast<unsigned char&>(t);
+		return p>>reinterpret_cast<char&>(t);
 	}
 
 
@@ -51,7 +51,7 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const ClusterMutexOperation &t)
 	{
-		p<<reinterpret_cast<const unsigned char&>(t);
+		p<<reinterpret_cast<const char&>(t);
 	}
 
 } //end namespace cluster
@@ -107,7 +107,7 @@ bool ClusterMutex::try_lock()
 	bool rejected = false;
 	for(const auto &package : response)
 	{
-		unsigned char c;
+		char c;
 		while(package.second>>c)
 		{
 			if(c == 'x')
@@ -144,7 +144,7 @@ void ClusterMutex::unlock()
 bool ClusterMutex::received(const Address &/*ip*/, const Package &message, Package &answer, Package &/*to_send*/)
 {
 	ClusterMutexOperation type;
-	message>>type;
+	if(!(message>>type))return false;
 
 	switch(type)
 	{

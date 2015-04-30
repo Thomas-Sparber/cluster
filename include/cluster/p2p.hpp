@@ -61,7 +61,9 @@ public:
 	 **/
 	virtual void addMemberCallback(MemberCallback *memberCallback) override
 	{
+		callbackMutex.lock();
 		this->memberCallbacks.push_back(memberCallback);
+		callbackMutex.unlock();
 	}
 
 	/**
@@ -70,9 +72,11 @@ public:
 	  * member callbacks.
 	 **/
 	virtual void removeMemberCallback(MemberCallback *memberCallback) override
-        {
+	{
+		callbackMutex.lock();
 		this->memberCallbacks.remove(memberCallback);
-        }
+		callbackMutex.unlock();
+	}
 
 	/**
 	  * Returns the type of ClusterObject
@@ -86,7 +90,7 @@ public:
 	  * Returns the current amount of memebers of the p2p
 	  * network
 	 **/
-	unsigned int getMembersCount() const
+	std::size_t getMembersCount() const
 	{
 		return members.size();
 	}
@@ -308,6 +312,11 @@ private:
 	  * network has no members
 	 **/
 	bool continueWithoutMembers;
+
+	/**
+	  * This mutex synchronizes access to the member callbacks
+	 **/
+	std::mutex callbackMutex;
 
 }; // end class p2p
 

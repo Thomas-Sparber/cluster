@@ -13,6 +13,7 @@
 #include <thread>
 #include <queue>
 #include <mutex>
+#include <condition_variable>
 
 namespace cluster
 {
@@ -152,6 +153,17 @@ private:
 	  * Allows paralled access to the requests queue
 	 **/
 	std::mutex m;
+
+	/**
+	  * The condition variable which is used to notify the threads
+	  * to accept connections
+	 **/
+	std::condition_variable cv;
+
+	/**
+	  * The mutext which is needed for the threads to wait.
+	 **/
+	std::mutex cm;
 
 };
 

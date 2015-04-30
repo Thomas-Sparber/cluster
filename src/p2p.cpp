@@ -32,7 +32,7 @@ namespace cluster
 	  * which are used to communicate between
 	  * p2p networks
 	 **/
-	enum class p2pOperation : unsigned char
+	enum class p2pOperation : char
 	{
 
 		/**
@@ -59,7 +59,12 @@ namespace cluster
 		  * message which also includes the addresses
 		  * of the other peers
 		 **/
-		other_peers_response = 'o'
+		other_peers_response = 'o',
+
+		/**
+		  * This messages means that the sender went offline
+		 **/
+		went_offline = 'w'
 
 	}; //end enum p2pOperation
 
@@ -70,7 +75,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, p2pOperation &t)
 	{
-		return p>>reinterpret_cast<unsigned char&>(t);
+		return p>>reinterpret_cast<char&>(t);
 	}
 
 
@@ -81,7 +86,7 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const p2pOperation &t)
 	{
-		p<<reinterpret_cast<const unsigned char&>(t);
+		p<<reinterpret_cast<const char&>(t);
 	}
 
 } //end namespace cluster
@@ -102,7 +107,8 @@ p2p::p2p(const Protocol &p) :
 	memberCallbacks(),
 	startTime(),
 	reconnectRetries(3),
-	continueWithoutMembers(true)
+	continueWithoutMembers(true),
+	callbackMutex()
 {
 	//Measure start time to determine master host
 	struct timeval t;
@@ -122,6 +128,9 @@ p2p::p2p(const Protocol &p) :
 
 p2p::~p2p()
 {
+	//Tell others that I'm going offline
+	send(p2pOperation::went_offline, nullptr);
+
 	//Close server socket and seach thread
 	close();
 
@@ -221,11 +230,33 @@ void p2p::connectToHosts()
 	time_t t2;
 	time(&t1);
 
+	unsigned int memberIndex = 0;
+	bool askMember = true;
+
 	auto it = addressRanges.cbegin();
 	Address *currentAddress = nullptr;
 	Address *currentAddressEnd = nullptr;
 	while(isConnected)
 	{
+		//Members are checked every second time
+		if((askMember = !askMember))
+		{
+			Address *a = nullptr;
+
+			memberMutex.lock();
+			if(memberIndex >= members.size())memberIndex = 0;
+			if(memberIndex < members.size())
+			{
+				auto memberIt = members.cbegin();
+				for(unsigned int i = 0; i < memberIndex; ++i, ++memberIt);
+				a = memberIt->getAddress().clone();
+			}
+			memberMutex.unlock();
+
+			if(a)testConnection(*a, 1);
+			delete a;
+		}
+
 		//Continue if no address ranges exist
 		if(it == addressRanges.cend())
 		{
@@ -341,26 +372,37 @@ void p2p::online(const Address &address, unsigned long long otherTime)
 	ask(address, p2pOperation::other_peers, nullptr);
 
 	//Notify callbacks
+	callbackMutex.lock();
 	for(auto it = memberCallbacks.begin(); it != memberCallbacks.end(); it++)
 	{
 		(*it)->memberOnline(address, isMaster);
 	}
+	callbackMutex.unlock();
 }
 
 void p2p::offline(const Address &address)
 {
+	bool wasMember = false;
+
 	memberMutex.lock();
 	auto index = find(members.begin(), members.end(), address);
 	if(index != members.end())
 	{
-		//Notify callbacks
+		wasMember = true;
+		members.erase(index);
+	}
+	memberMutex.unlock();
+
+	//Notify callbacks
+	if(wasMember)
+	{
+		callbackMutex.lock();
 		for(auto it = memberCallbacks.begin(); it != memberCallbacks.end(); it++)
 		{
 			(*it)->memberOffline(address);
 		}
-		members.erase(index);
+		callbackMutex.unlock();
 	}
-	memberMutex.unlock();
 }
 
 bool p2p::ClusterObject_send(const Package &message, AnswerPackage *answer)
@@ -459,7 +501,7 @@ bool p2p::ClusterObject_send(const Package &message, AnswerPackage *answer)
 bool p2p::received(const Address &ip, const Package &message, Package &/*answer*/, Package &to_send)
 {
 	p2pOperation type;
-	message>>type;
+	if(!(message>>type))return false;
 	switch(type)
 	{
 	case p2pOperation::echo_message:
@@ -467,7 +509,7 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 		{
 			//Save client as memeber
 			unsigned long long otherTime;
-			message>>otherTime;
+			if(!(message>>otherTime))return false;
 			online(ip, otherTime);
 		}
 		to_send<<p2pOperation::echo_response_message;
@@ -478,7 +520,7 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 		{
 			//Save client as memeber
 			unsigned long long otherTime;
-			message>>otherTime;
+			if(!(message>>otherTime))return false;
 			online(ip, otherTime);
 		}
 		return true;
@@ -533,6 +575,9 @@ bool p2p::received(const Address &ip, const Package &message, Package &/*answer*
 		otherPeersToCheckMutex.unlock();
 		return true;
 	}
+	case p2pOperation::went_offline:
+		offline(ip);
+		return true;
 	default:
 		return false;
 	}

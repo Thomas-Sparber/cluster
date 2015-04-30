@@ -25,7 +25,9 @@ Server::Server(const Protocol &p_protocol) :
 	t(),
 	answerThread(),
 	requests(),
-	m()
+	m(),
+	cv(),
+	cm()
 {
 	//Open listener connection
 	openConnection();
@@ -50,6 +52,7 @@ Server::~Server()
 	running = false;
 	t->join();
 	delete t;
+	cv.notify_all();
 	for(unsigned int i = 0; i < handlersCount; i++)
 	{
 		answerThread[i]->join();
@@ -80,6 +83,10 @@ void Server::serverFunction()
 			m.lock();
 			requests.push(client);
 			m.unlock();
+
+			//Notify threads that there is something to do
+			unique_lock<mutex> lock(cm);
+			cv.notify_one();
 		}
 		else
 		{
@@ -105,7 +112,8 @@ void Server::handle()
 		if(requests.empty())
 		{
 			m.unlock();
-			usleep(1000);
+			unique_lock<mutex> lock(cm);
+			cv.wait(lock);
 			continue;
 		}
 		CommunicationSocket *client = requests.front();

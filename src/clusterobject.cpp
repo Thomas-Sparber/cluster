@@ -20,7 +20,7 @@ namespace cluster
 	  * This enum defines the actions of the
 	  * ClusterObject
 	 **/
-	enum class ClusterObjectOperation : unsigned char
+	enum class ClusterObjectOperation : char
 	{
 		/**
 		  * Indicates that the message is intended
@@ -42,7 +42,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, ClusterObjectOperation &t)
 	{
-		return p>>reinterpret_cast<unsigned char&>(t);
+		return p>>reinterpret_cast<char&>(t);
 	}
 
 
@@ -53,7 +53,7 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const ClusterObjectOperation &t)
 	{
-		p<<reinterpret_cast<const unsigned char&>(t);
+		p<<reinterpret_cast<const char&>(t);
 	}
 
 
