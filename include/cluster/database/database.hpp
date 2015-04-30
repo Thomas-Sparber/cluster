@@ -9,11 +9,12 @@
 #ifndef DATABASE_HPP
 #define DATABASE_HPP
 
-#include <cluster/clusterobjectserialized.hpp>
+#include <cluster/clusterobjectdistributed.hpp>
 #include <cluster/database/sqlquery.hpp>
 #include <cluster/database/sqlresult.hpp>
 #include <cluster/database/table.hpp>
 #include <vector>
+#include <list>
 #include <mutex>
 #include <string>
 
@@ -21,11 +22,13 @@ namespace cluster
 {
 
 class SQLQueryElement;
+class SQLQuery_insertInto;
+class SQLFetchResult;
 
 /**
   * 
  **/
-class Database : public ClusterObjectSerialized
+class Database : public ClusterObjectDistributed
 {
 
 public:
@@ -33,7 +36,7 @@ public:
 	  * Default constructor which creates the
 	  * Database and adds it to the given network
 	 **/
-	Database(ClusterObject *network, unsigned int maxPackagesToRemember=100);
+	Database(ClusterObject *network, const std::string &name, unsigned int dataRedundancy, unsigned int takeOverSize, unsigned int maxPackagesToRemember=100);
 
 	/**
 	  * Default destructor
@@ -51,54 +54,26 @@ public:
 	/**
 	  * Executes the given query
 	 **/
-	SQLResult executeQuery(const std::string &query)
-	{
-		return executeQuery(SQLQuery(query));
-	}
+	SQLResult execute(SQLQuery query);
 
-	/**
-	  * Executes the given query
-	 **/
-	SQLResult execute(const SQLQuery &query)
+	bool tableExists(const std::string &tableName) const
 	{
-		SQLResult res;
-		doAndSend(query, &res);
-		return res;
-	}
-
-	/**
-	  * Executes the given query
-	 **/
-	SQLResult executeQuery(const SQLQuery &query)
-	{
-		SQLResult res;
-		doAndSend(query, &res);
-		return res;
-	}
-
-	bool tableExists(const std::string &name) const
-	{
-		return (getTable(name) != nullptr);
+		return (getTable(tableName) != nullptr);
 	}
 
 	/**
 	  * Creates the table with the given name
 	 **/
-	Table* createTable(const std::string &name)
-	{
-		Table *t = new Table(name);
-		tables.push_back(t);
-		return t;
-	}
+	Table* createTable(const std::string &tableName, SQLResult *result, bool isCoordinator, const SQLQuery &q);
 
 	/**
 	  * Returns the table with the given name
 	 **/
-	Table* getTable(const std::string &name)
+	Table* getTable(const std::string &tableName)
 	{
 		for(Table *t : tables)
 		{
-			if(t->getName() == name)return t;
+			if(t->getName() == tableName)return t;
 		}
 		return nullptr;
 	}
@@ -106,14 +81,30 @@ public:
 	/**
 	  * Returns the table with the given name
 	 **/
-	const Table* getTable(const std::string &name) const
+	const Table* getTable(const std::string &tableName) const
 	{
 		for(Table *t : tables)
 		{
-			if(t->getName() == name)return t;
+			if(t->getName() == tableName)return t;
 		}
 		return nullptr;
 	}
+
+	/**
+	  * Creates the IndexIterator to select all rows from the
+	  * given table
+	 **/
+	void select(const std::string &table, const std::vector<Column> &cols, SQLResult *result, bool isCoordinator, const SQLQuery &q);
+
+	/**
+	  * Selects the next row from the iterator
+	 **/
+	void selectNext(unsigned int onlineClient, IndexIterator &it, SQLFetchResult &out);
+
+	/**
+	  * Insertd the given data into the given table
+	 **/
+	void insert(const std::string &table, const std::vector<std::string> &cols, const std::vector<std::string> &values, SQLResult *result, bool isCoordinator, const SQLQuery &q);
 
 	/**
 	  * Returns the type of ClusterObject
@@ -125,11 +116,25 @@ public:
 
 protected:
 	/**
-	  * Overrides the function from ClusterObjectSerialized.
-	  * This function is called whenever a package was missed
-	  * and needs to be performed.
+	  * Overrides the function from ClusterObjectDistributed.
+	  * This function is called whenever a command
+	  * package needs to be performed.
 	 **/
-	virtual bool perform(const Package &message) override;
+	virtual bool performCommand(const Package &message, Package &answer, Package &toSend) override;
+
+	/**
+	  * Overrides the function from ClusterObjectDistributed.
+	  * This function is called whenever a data
+	  * package needs to be performed.
+	 **/
+	virtual bool performInsert(const Package &message, std::string &idOut, std::string &error) override;
+
+	/**
+	  * Overrides the function from ClusterObjectDistributed.
+	  * This function is called whenever some data need to
+	  * be fetched
+	 **/
+	virtual bool performFetch(const std::string &id, Package &answer) override;
 
 	/**
 	  * Overrides the function from ClusterObjectSerialized.
@@ -138,14 +143,14 @@ protected:
 	  * with the data so that the rebuild function can rebuild the
 	  * entire structure using this package.
 	 **/
-	virtual void getRebuildPackage(Package &out) override;
+	virtual void getRebuildPackage(Package &out) const override;
 
 	/**
 	  * Ovedrrides the function from ClusterObjectSerialized.
 	  * This function is called whenever the structure needs
 	  * to be rebuilt entirely.
 	 **/
-	virtual void rebuild(const Package &out) override;
+	virtual void rebuild(const Package &out, const Address &address) override;
 
 private:
 	/**
@@ -161,19 +166,46 @@ private:
 	Database& operator= (const Database &d);
 
 	/**
-	  * Performs the given operation by first sending it to the
-	  * network, waiting for approvement and then performing
-	  * it locally.
+	  * Sends the given query to the network
+	  * and saves the response in result. The mutex
+	  * is used for synchronized access to the result
 	 **/
-	void doAndSend(SQLQuery query, SQLResult *result);
+	void sendToNetwork(const SQLQuery &query, std::mutex *m, SQLResult *result);
 
 	/**
-	  * Performs the given operation locally. This function
-	  * is called by doAndSend and by received.
+	  * Sends the given query to the given address
+	  * and saves the response in result. The mutex
+	  * is used for synchronized access to the result
 	 **/
-	void perform(const SQLQuery &query, SQLResult *result);
+	void sendToNetwork(const Address &address, const SQLQuery &query, std::mutex *m, SQLResult *result);
+
+	/**
+	  * Sends the given query to the given address
+	  * and saves the response in result. The mutex
+	  * is used for synchronized access to the result
+	 **/
+	void sendToNetwork(unsigned int clientIndex, const SQLQuery &query, std::mutex *m, SQLResult *result);
+
+	/**
+	  * Sends the given IndexIterator to the given address
+	  * and saves the response in result. The mutex
+	  * is used for synchronized access to the result
+	 **/
+	void sendToNetwork(const Address &address, IndexIterator &it, std::mutex *m, std::list<SQLFetchResult> &result);
+
+	/**
+	  * Sends the given IndexIterator to the given address
+	  * and saves the response in result. The mutex
+	  * is used for synchronized access to the result
+	 **/
+	void sendToNetwork(unsigned int clientIndex, IndexIterator &it, std::mutex *m, std::list<SQLFetchResult> &result);
 
 private:
+	/**
+	  * The name of the database
+	 **/
+	std::string name;
+
 	/**
 	  * This vector stores the table data
 	 **/

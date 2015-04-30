@@ -72,9 +72,10 @@ public:
 		return query;
 	}
 
-	static bool isSpecialCharacter(unsigned char c)
+	static bool isSpecialCharacter(char c)
 	{
 		if(c == '_')return false;
+		if(c == '\'')return false;
 		return !isalnum(c);
 	}
 
@@ -82,48 +83,12 @@ public:
 	  * Creates the internal query tree which is
 	  * used to execute it
 	 **/
-	bool createQueryTree(const Database &db, SQLResult *result)
-	{
-		std::string newQuery(query);
-		bool lastWasNotAlnum = false;
-		for(unsigned int i = 0; i < newQuery.size(); ++i)
-		{
-			if(newQuery[i] == ';')
-			{
-				if(newQuery.size() > i+1)
-				{
-					if(result)result->localFail("Provided more than one query");
-					return false;
-				}
-				newQuery = newQuery.substr(0, i);
-				break;
-			}
-
-			if(isSpecialCharacter(newQuery[i]) && !isspace(newQuery[i]))
-			{
-				lastWasNotAlnum = true;
-				if(i > 0 && !isspace(newQuery[i]))
-				{
-					newQuery = newQuery.substr(0, i) + " " + newQuery.substr(i);
-					++i;
-				}
-			}
-			else if(lastWasNotAlnum && !isspace(newQuery[i]))
-			{
-				lastWasNotAlnum = false;
-				newQuery = newQuery.substr(0, i) + " " + newQuery.substr(i);
-				++i;
-			}
-			else lastWasNotAlnum = false;
-		}
-		std::stringstream ss(newQuery);
-		return createQueryTree(ss, queryTree, db, result);
-	}
+	bool createQueryTree(const Database &db, SQLResult *result);
 
 	/**
 	  * Executes the query on the given database
 	 **/
-	bool execute(Database &db, SQLResult *result) const
+	bool execute(Database &db, SQLResult *result, bool isCoordinator) const
 	{
 		if(!queryTree)
 		{
@@ -131,7 +96,7 @@ public:
 			return false;
 		}
 
-		return queryTree->execute(db, result);
+		return queryTree->execute(db, result, isCoordinator, (*this));
 	}
 
 	friend bool operator>> <>(const Package &p, SQLQuery &q);

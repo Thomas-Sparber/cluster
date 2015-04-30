@@ -19,7 +19,7 @@ namespace cluster
   * The IndexColumn holds the column data for
   * the index. This can also be multiple columns
  **/
-class IndexColumn
+struct IndexColumn
 {
 
 public:
@@ -27,8 +27,7 @@ public:
 	  * Constructs an IndexColumn for the given
 	  * columns using the given data
 	 **/
-	IndexColumn(const std::vector<Column> &v_columns, const std::vector<void*> &v_data) :
-		columns(&v_columns),
+	IndexColumn(const std::vector<DataValue> &v_data) :
 		data(v_data)
 	{}
 
@@ -36,7 +35,6 @@ public:
 	  * Copy construtor
 	 **/
 	IndexColumn(const IndexColumn &c) :
-		columns(c.columns),
 		data(c.data)
 	{}
 
@@ -45,7 +43,6 @@ public:
 	 **/
 	IndexColumn& operator= (const IndexColumn &c)
 	{
-		columns = c.columns;
 		data = c.data;
 		return (*this);
 	}
@@ -56,10 +53,9 @@ public:
 	 **/
 	bool operator< (const IndexColumn &c) const
 	{
-		if(columns != c.columns)return false;
-		for(unsigned int i = 0; i < data.size() && i < c.data.size(); ++i)
+		for(std::size_t i = 0; i < data.size() && i < c.data.size(); ++i)
 		{
-			const int compare = (*columns)[i].compare(data[i], c.data[i]);
+			const int compare = data[i].compare(c.data[i]);
 			if(compare < 0)return true;
 			if(compare > 0)return false;
 		}
@@ -72,10 +68,9 @@ public:
 	 **/
 	bool operator> (const IndexColumn &c) const
 	{
-		if(columns != c.columns)return false;
-		for(unsigned int i = 0; i < data.size() && i < c.data.size(); ++i)
+		for(std::size_t i = 0; i < data.size() && i < c.data.size(); ++i)
 		{
-			const int compare = (*columns)[i].compare(data[i], c.data[i]);
+			const int compare = data[i].compare(c.data[i]);
 			if(compare > 0)return true;
 			if(compare < 0)return false;
 		}
@@ -88,27 +83,43 @@ public:
 	 **/
 	bool operator== (const IndexColumn &c) const
 	{
-		if(columns != c.columns)return false;
-		for(unsigned int i = 0; i < data.size() && i < c.data.size(); ++i)
+		for(std::size_t i = 0; i < data.size() && i < c.data.size(); ++i)
 		{
-			const int compare = (*columns)[i].compare(data[i], c.data[i]);
+			const int compare = data[i].compare(c.data[i]);
 			if(compare != 0)return false;
 		}
 		return true;
 	}
 
-private:
 	/**
-	  * The type of data
+	  * The index data
 	 **/
-	const std::vector<Column> *columns;
-
-	/**
-	  * The data
-	 **/
-	std::vector<void*> data;
+	std::vector<DataValue> data;
 
 }; //end struct IndexColumn
+
+/**
+  * This function is overloaded from the Package class
+  * to retrieve a IndexColumn from a Package
+ **/
+template <>
+inline bool operator>>(const Package &p, IndexColumn &c)
+{
+	c.data.clear();
+	if(!(p>>c.data))return false;
+	return true;
+}
+
+
+/**
+  * This function is overloaded from the Package class
+  * to insert a IndexColumn into a Package
+ **/
+template <>
+inline void operator<<(Package &p, const IndexColumn &c)
+{
+	p<<c.data;
+}
 
 /**
   * The indexElement stores information about
@@ -146,9 +157,18 @@ class Index
 
 public:
 	/**
+	  * Constructs an empty index
+	 **/
+	Index() :
+		forPrimary(),
+		columns(),
+		container()
+	{}
+
+	/**
 	  * Constructs an index for the given columns
 	 **/
-	Index(const std::vector<Column> &v_columns, bool b_forPrimary) :
+	Index(const std::vector<std::size_t> &v_columns, bool b_forPrimary) :
 		forPrimary(b_forPrimary),
 		columns(v_columns),
 		container()
@@ -157,7 +177,7 @@ public:
 	/**
 	  * Constructs an index for the given column
 	 **/
-	Index(const Column &column, bool b_forPrimary) :
+	Index(std::size_t column, bool b_forPrimary) :
 		forPrimary(b_forPrimary),
 		columns(),
 		container()
@@ -168,11 +188,11 @@ public:
 	/**
 	  * Adds a column to the index
 	 **/
-	bool addColumn(const Column &c)
+	void addColumn(std::size_t c)
 	{
-		if(!container.empty())return false;
+		if(!container.empty())throw SQLException("Can't add a column to a non empty index");
+
 		columns.push_back(c);
-		return true;
 	}
 
 	bool isForPrimary() const
@@ -183,9 +203,9 @@ public:
 	/**
 	  * Inserts the given data into the given index
 	 **/
-	bool insert(const std::vector<void*> &c, long long begin, long long end)
+	bool insert(const std::vector<DataValue> &c, long long ll_begin, long long ll_end)
 	{
-		return insert(IndexColumn(columns, c), IndexElement(begin, end));
+		return insert(IndexColumn(c), IndexElement(ll_begin, ll_end));
 	}
 
 	/**
@@ -201,19 +221,54 @@ public:
 	/**
 	  * Gets the given data from the container
 	 **/
-	IndexElement get(const std::vector<void*> &c)
+	std::map<IndexColumn,IndexElement>::const_iterator get(const std::vector<DataValue> &c) const
 	{
-		return get(IndexColumn(columns, c));
+		return get(IndexColumn(c));
 	}
 
 	/**
 	  * Gets the given data from the container
 	 **/
-	IndexElement get(const IndexColumn &c)
+	std::map<IndexColumn,IndexElement>::const_iterator get(const IndexColumn &c) const
 	{
-		auto it = container.find(c);
-		if(it == container.cend())return IndexElement(0, 0);
-		return it->second;
+		return container.find(c);
+	}
+
+	/**
+	  * Gets the start of the index
+	 **/
+	std::map<IndexColumn,IndexElement>::const_iterator begin() const
+	{
+		return container.cbegin();
+	}
+
+	/**
+	  * Gets the end of the index
+	 **/
+	std::map<IndexColumn,IndexElement>::const_iterator end() const
+	{
+		return container.cend();
+	}
+
+	/**
+	  * Finds the indexColumn
+	 **/
+	std::map<IndexColumn,IndexElement>::const_iterator find(const IndexColumn &c) const
+	{
+		return container.find(c);
+	}
+
+	/**
+	  * Returns the indices which are used for the index
+	 **/
+	const std::vector<std::size_t>& getColumns() const
+	{
+		return columns;
+	}
+
+	bool empty() const
+	{
+		return container.empty();
 	}
 
 	friend bool operator>> <>(const Package &p, Index &q);
@@ -228,7 +283,7 @@ private:
 	/**
 	  * The columns the index is holding
 	 **/
-	std::vector<Column> columns;
+	std::vector<std::size_t> columns;
 
 	/**
 	  * The map that holds the index elements
@@ -244,19 +299,8 @@ private:
 template <>
 inline bool operator>>(const Package &p, Index &i)
 {
-	i.columns.clear();
-
 	if(!(p>>i.forPrimary))return false;
-
-	unsigned int columnsCount;
-	if(!(p>>columnsCount))return false;
-	for(unsigned int j = 0; j < columnsCount; ++j)
-	{
-		Column c("");
-		if(!(p>>c))return false;
-		i.columns.push_back(c);
-	}
-
+	if(!(p>>i.columns))return false;
 	return true;
 }
 
@@ -269,10 +313,7 @@ template <>
 inline void operator<<(Package &p, const Index &i)
 {
 	p<<i.forPrimary;
-
-	const unsigned int columnsCount = i.columns.size();
-	p<<columnsCount;
-	for(const Column &column : i.columns)p<<column;
+	p<<i.columns;
 }
 
 } //end namespace cluster

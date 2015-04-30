@@ -11,6 +11,8 @@
 #include <cluster/database/table.hpp>
 #include <cluster/database/database.hpp>
 #include <cluster/database/sqlquery_createtable.hpp>
+#include <cluster/database/sqlquery_insertinto.hpp>
+#include <cluster/database/sqlquery_select.hpp>
 #include <iostream>
 #include <ctype.h>
 
@@ -51,6 +53,44 @@ bool SQLQuery::operator== (const SQLQuery &q) const
 	return query == q.query;
 }
 
+bool SQLQuery::createQueryTree(const Database &db, SQLResult *result)
+{
+	std::string newQuery(query);
+	bool lastWasNotAlnum = false;
+	for(unsigned int i = 0; i < newQuery.size(); ++i)
+	{
+		if(newQuery[i] == ';')
+		{
+			if(newQuery.size() > i+1)
+			{
+				if(result)result->localFail("Provided more than one query");
+				return false;
+			}
+			newQuery = newQuery.substr(0, i);
+			break;
+		}
+
+		if(isSpecialCharacter(newQuery[i]) && !isspace(newQuery[i]))
+		{
+			lastWasNotAlnum = true;
+			if(i > 0 && !isspace(newQuery[i]))
+			{
+				newQuery = newQuery.substr(0, i) + " " + newQuery.substr(i);
+				++i;
+			}
+		}
+		else if(lastWasNotAlnum && !isspace(newQuery[i]))
+		{
+			lastWasNotAlnum = false;
+			newQuery = newQuery.substr(0, i) + " " + newQuery.substr(i);
+			++i;
+		}
+		else lastWasNotAlnum = false;
+	}
+	std::stringstream ss(newQuery);
+	return createQueryTree(ss, queryTree, db, result);
+}
+
 bool SQLQuery::createQueryTree(stringstream &ss, SQLQueryElement *&tree, const Database &db, SQLResult *result)
 {
 	string s;
@@ -70,7 +110,9 @@ bool SQLQuery::createQueryTree(stringstream &ss, SQLQueryElement *&tree, const D
 				break;
 			}
 		} catch(const SQLException &ex) {
-			if(result)result->localFail(string("SQL Syntax error near ") + ss.str() + ": " + ex.text);
+			string str;
+			getline(ss, str);
+			if(result)result->localFail(string("SQL Syntax error near >>") + s + str + "<<: " + ex.text);
 			ss.str(string());
 			return false;
 		}
@@ -81,6 +123,12 @@ bool SQLQuery::createQueryTree(stringstream &ss, SQLQueryElement *&tree, const D
 	{
 	case SQLQueryType::create_table:
 		tree = new SQLQuery_createTable();
+		break;
+	case SQLQueryType::insert_into:
+		tree = new SQLQuery_insertInto();
+		break;
+	case SQLQueryType::select:
+		tree = new SQLQuery_select();
 		break;
 	default:
 		if(result && result->wasSuccess())
@@ -122,13 +170,21 @@ bool cluster::operator>>(const Package &p, SQLQuery &q)
 	if(q.queryTree)delete q.queryTree;
 	q.queryTree = nullptr;
 
-	if(!(p>>q.query))return false;
 	SQLQueryType type = SQLQueryType::invalid;
-	p>>type;
+	if(!(p>>q.query))return false;
+	if(!(p>>type))return false;
 	switch(type)
 	{
 	case SQLQueryType::create_table:
 		q.queryTree = new SQLQuery_createTable();
+		if(!(p>>(*q.queryTree)))return false;
+		break;
+	case SQLQueryType::insert_into:
+		q.queryTree = new SQLQuery_insertInto();
+		if(!(p>>(*q.queryTree)))return false;
+		break;
+	case SQLQueryType::select:
+		q.queryTree = new SQLQuery_select();
 		if(!(p>>(*q.queryTree)))return false;
 		break;
 	default:

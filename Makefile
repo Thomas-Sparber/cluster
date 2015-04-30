@@ -1,13 +1,18 @@
 CXX=g++-4.7
-CFLAGS=-c -g -Wall -Wextra -Weffc++ -std=c++11 -I./include -pedantic -Wdouble-promotion -Wuninitialized -fipa-pure-const -Wtrampolines -Wfloat-equal  -Wunsafe-loop-optimizations -Wc++11-compat -Wcast-qual -Wcast-align -Wzero-as-null-pointer-constant -Wconversion -Wlogical-op -Wredundant-decls -Wshadow
+CFLAGS=-c -g -Wall -Wextra -Weffc++ -std=c++11 -I./include -pedantic -Wdouble-promotion -Wuninitialized -fipa-pure-const -Wtrampolines -Wfloat-equal  -Wunsafe-loop-optimizations -Wc++11-compat -Wcast-qual -Wcast-align -Wzero-as-null-pointer-constant -Wconversion -Wlogical-op -Wredundant-decls -Wshadow -Wint-to-pointer-cast
 LDFLAGS=-lpthread -L./ -lcluster
 SOURCES_CLUSTER= \
 	src/client.cpp \
 	src/clustermutex.cpp \
 	src/clusterobject.cpp \
+	src/clusterobjectdistributed.cpp \
 	src/clusterobjectserialized.cpp \
 	src/database/database.cpp \
+	src/database/datavalue.cpp \
 	src/database/sqlquery.cpp \
+	src/database/sqlquery_createtable.cpp \
+	src/database/sqlquery_insertinto.cpp \
+	src/database/sqlquery_select.cpp \
 	src/database/sqlresult.cpp \
 	src/database/table.cpp \
 	src/p2p.cpp \
@@ -29,7 +34,7 @@ OBJECTS_MAIN=$(SOURCES_MAIN:src/%.cpp=bin/%.o)
 DEPS_CLUSTER=$(SOURCES_CLUSTER:src/%.cpp=bin/%.d)
 DEPS_MAIN=$(SOURCES_MAIN:src/%.cpp=bin/%.d)
 
-all: libcluster.a main 10_0_0_201 10_0_0_202
+all: libcluster.a main 10_0_0_201 10_0_0_202 10_0_0_1
 
 -include $(DEPS_CLUSTER)
 -include $(DEPS_MAIN)
@@ -63,7 +68,12 @@ documentation:
 10_0_0_202:
 	$(call linkecho, "Building 10.0.0.202")
 	@rsync -r --delete --checksum /home/cubie/cluster/include /home/cubie/cluster/src /home/cubie/cluster/addresses.txt /home/cubie/cluster/Makefile pi@10.0.0.202:/home/pi/cluster/
-	@ssh -t pi@10.0.0.202 /home/pi/buildcluster
+	@ssh -t pi@10.0.0.202 /home/pi/cluster/buildcluster
+
+10_0_0_1:
+	$(call linkecho, "Building 10.0.0.1")
+	@rsync -r --delete --checksum /home/cubie/cluster/include /home/cubie/cluster/src /home/cubie/cluster/addresses.txt /home/cubie/cluster/Makefile thomas@10.0.0.1:/home/thomas/cluster/
+	@ssh -t thomas@10.0.0.1 /home/thomas/cluster/buildcluster
 
 main: $(OBJECTS_MAIN) libcluster.a
 	$(call linkecho, "Linking" $@)
@@ -79,4 +89,4 @@ bin/%.o: src/%.cpp
 
 clean:
 	$(call cleanecho, "Cleaning")
-	@rm -rf bin/*.o bin/*.d bin/ipv4/*.o bin/ipv4/*.d bin/ipv6/*.o bin/ipv6/*.d libcluster.a main
+	@rm -rf bin/*.o bin/*.d bin/ipv4/*.o bin/ipv4/*.d bin/ipv6/*.o bin/ipv6/*.d bin/database/*.o bin/database/*.d libcluster.a main

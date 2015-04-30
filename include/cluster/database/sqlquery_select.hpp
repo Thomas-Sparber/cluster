@@ -6,28 +6,29 @@
   *
  **/
 
-#ifndef SQLQUERY_CREATETABLE_HPP
-#define SQLQUERY_CREATETABLE_HPP
+#ifndef SQLQUERY_SELECT_HPP
+#define SQLQUERY_SELECT_HPP
 
 #include <cluster/database/sqlqueryelement.hpp>
-#include <cluster/database/column.hpp>
 #include <string>
-#include <iostream>
 
 namespace cluster
 {
 
-class SQLQuery_createTable : public SQLQueryElement
+/**
+  * This represents a query that selects
+  * some data from the database
+ **/
+class SQLQuery_select : public SQLQueryElement
 {
 
 public:
 	/**
 	  * Default constructor
 	 **/
-	SQLQuery_createTable() :
-		SQLQueryElement(SQLQueryType::create_table),
-		ifNotExists(false),
-		tableName(),
+	SQLQuery_select() :
+		SQLQueryElement(SQLQueryType::select),
+		table(),
 		columns(),
 		step(Step::begin)
 	{}
@@ -35,7 +36,7 @@ public:
 	/**
 	  * Default destructor
 	 **/
-	virtual ~SQLQuery_createTable() {}
+	virtual ~SQLQuery_select() {}
 
 	/**
 	  * Constructs a query word by word.
@@ -60,8 +61,7 @@ public:
 	 **/
 	virtual bool extract(const Package &p) override
 	{
-		if(!(p>>ifNotExists))return false;
-		if(!(p>>tableName))return false;
+		if(!(p>>table))return false;
 		if(!(p>>columns))return false;
 		return true;
 	}
@@ -71,8 +71,7 @@ public:
 	 **/
 	virtual void insert(Package &p) const override
 	{
-		p<<ifNotExists;
-		p<<tableName;
+		p<<table;
 		p<<columns;
 	}
 
@@ -81,33 +80,19 @@ public:
 	 **/
 	virtual SQLQueryElement* clone() const override
 	{
-		return new SQLQuery_createTable(*this);
-	}
-
-	/**
-	  * Gets the name of the table to be created
-	 **/
-	std::string getTableName() const
-	{
-		return tableName;
+		return new SQLQuery_select(*this);
 	}
 
 private:
 	/**
-	  * If true, the query does not abort when
-	  * the table already exists
+	  * The table name where to insert the data
 	 **/
-	bool ifNotExists;
+	std::string table;
 
 	/**
-	  * The name of the table
+	  * The columns for which to insert data
 	 **/
-	std::string tableName;
-
-	/**
-	  * The columns to be added to the table
-	 **/
-	std::vector<Column> columns;
+	std::vector<std::string> columns;
 
 	/**
 	  * This inner class is used to record
@@ -117,14 +102,20 @@ private:
 	{
 		begin,
 		after_table_name,
-		column_declaration,
-		current_column_declaration,
-		as_select_declaration,
-		after_column_declaration
+		column,
+		after_column,
+		columns_finished,
+		values_select,
+		values_definition,
+		value,
+		after_value,
+		single_value_select,
+		values_finished,
+		finished
 	} step; //end enum step
 
-}; //end class SQLQuery_createTable
+}; //end class SQLQuery_select
 
 } //end namespace cluster
 
-#endif //SQLQUERY_CREATETABLE_HPP
+#endif //SQLQUERY_SELECT_HPP

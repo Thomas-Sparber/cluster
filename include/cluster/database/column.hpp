@@ -10,129 +10,68 @@
 #define COLUMN_HPP
 
 #include <string>
+#include <cluster/database/datavalue.hpp>
 
 namespace cluster
 {
 
-enum class ColumnType : unsigned char
-{
-
-	c_invalid = ' ',
-
-	c_text = 't',
-
-	c_integer = 'i',
-
-	c_double = 'd'
-
-}; //end enum ColumnType
-
-/**
-  * This function is overloaded from the Package class
-  * to retrieve a ColumnType from a Package
- **/
-template <>
-inline bool operator>>(const Package &p, ColumnType &t)
-{
-	return p>>reinterpret_cast<unsigned char&>(t);
-}
-
-
-/**
-  * This function is overloaded from the Package class
-  * to insert a ColumnType into a Package
- **/
-template <>
-inline void operator<<(Package &p, const ColumnType &t)
-{
-	p<<reinterpret_cast<const unsigned char&>(t);
-}
-
 struct Column
 {
+
+	/**
+	  * Constructs invalid empty column
+	 **/
+	Column() :
+		name(),
+		type(),
+		notNull(false),
+		primaryKey(false),
+		unique(false),
+		autoIncrement(false),
+		autoIncrementValue(),
+		defaultValue()
+	{}
 
 	/**
 	  * Constructs a column using the given name
 	 **/
 	Column(const std::string &str_name) :
 		name(str_name),
-		type(ColumnType::c_invalid),
+		type(),
 		notNull(false),
 		primaryKey(false),
 		unique(false),
 		autoIncrement(false),
+		autoIncrementValue(),
 		defaultValue()
 	{}
 
-	int compare(void *a, void *b) const
-	{
-		switch(type)
-		{
-		case ColumnType::c_text:
-			return static_cast<std::string*>(a)->compare(*static_cast<std::string*>(b));
-		case ColumnType::c_integer:
-			return (*static_cast<int*>(a)) < (*static_cast<int*>(b)) ? -1 :
-				(*static_cast<int*>(a)) > (*static_cast<int*>(b)) ? 1 :
-				0;
-		case ColumnType::c_double:
-			return (*static_cast<double*>(a)) < (*static_cast<double*>(b)) ? -1 :
-				(*static_cast<double*>(a)) > (*static_cast<double*>(b)) ? 1 :
-				0;
-		default: return 0; //Error
-		}
-	}
-
 	void enableAutoIncrement()
 	{
-		switch(type)
-		{
-		case ColumnType::c_integer:
-			autoIncrement = true;
-			break;
-		default:
-			throw SQLException("This column can not hat AUTOINCREMENT");
-		}
+		if(type.canHaveAutoincrement())autoIncrement = true;
+		else throw SQLException("This column can not have AUTOINCREMENT");
 	}
 
-	bool setType(const std::string &t)
+	void setType(const std::string &t)
 	{
-		if(t == "text")
-		{
-			type = ColumnType::c_text;
-			return true;
-		}
-		if(t == "integer")
-		{
-			type = ColumnType::c_integer;
-			return true;
-		}
-		if(t == "double")
-		{
-			type = ColumnType::c_double;
-			return true;
-		}
-		return false;
+		type.setType(t);
+		autoIncrementValue = type;
 	}
 
-	void setDefault(std::string value)
+	const DataValue& nextAutoIncrementValue()
+	{
+		if(autoIncrementValue.isNull())autoIncrementValue.initDefaultValue();
+		return ++autoIncrementValue;
+	}
+
+	void setDefault(const std::string &value)
 	{
 		defaultValue = value;
 	}
 
-	std::string getTypeAsString() const
-	{
-		switch(type)
-		{
-		case ColumnType::c_text: return "text";
-		case ColumnType::c_integer: return "integer";
-		case ColumnType::c_double: return "double";
-		default: return "invalid";
-		}
-	}
-
 	std::string toString() const
 	{
-		return name + " " + getTypeAsString() + (unique ? " UNIQUE" : "") + (notNull ? " NOT NULL" : "") + (primaryKey ? " PRIMARY KEY" : "");
+		return name + " " + type.getTypeAsString() + (unique ? " UNIQUE" : "") + (notNull ? " NOT NULL" : "") + (primaryKey ? " PRIMARY KEY" : "");
 	}
 
 	/**
@@ -143,7 +82,7 @@ struct Column
 	/**
 	  * The type of the column
 	 **/
-	ColumnType type;
+	DataValue type;
 
 	/**
 	  * Indicates whether the column can be null or not
@@ -166,6 +105,11 @@ struct Column
 	bool autoIncrement;
 
 	/**
+	  * The auto increment value
+	 **/
+	DataValue autoIncrementValue;
+
+	/**
 	  * The default value of the column. Can be empty
 	 **/
 	std::string defaultValue;
@@ -185,6 +129,7 @@ inline bool operator>>(const Package &p, Column &c)
 	if(!(p>>c.primaryKey))return false;
 	if(!(p>>c.unique))return false;
 	if(!(p>>c.autoIncrement))return false;
+	if(c.autoIncrement)if(!(p>>c.autoIncrementValue))return false;
 	if(!(p>>c.defaultValue))return false;
 	return true;
 }
@@ -203,6 +148,7 @@ inline void operator<<(Package &p, const Column &c)
 	p<<c.primaryKey;
 	p<<c.unique;
 	p<<c.autoIncrement;
+	if(c.autoIncrement)p<<c.autoIncrementValue;
 	p<<c.defaultValue;
 }
 
