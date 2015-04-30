@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
+#include <list>
 
 namespace cluster
 {
@@ -45,8 +46,8 @@ public:
 	  * Constructor to create a Package using
 	  * the given content
 	 **/
-	Package(const unsigned char *uc_data, unsigned int length) :
-		data(uc_data, uc_data+length),
+	Package(const char *c_data, std::size_t length) :
+		data(c_data, c_data+length),
 		iteratorPosition(0)
 	{}
 
@@ -54,7 +55,7 @@ public:
 	  * Constructor to create a Package using
 	  * the given content
 	 **/
-	Package(const std::vector<unsigned char> &v_data) :
+	Package(const std::vector<char> &v_data) :
 		data(v_data),
 		iteratorPosition(0)
 	{}
@@ -78,24 +79,24 @@ public:
 	void write(const long double &t){ write_internal(t); }
 	void write(const bool &t){ write_internal(t); }
 
-	void write(const char *array, unsigned int size) { write_internal(array, size); }
-	void write(const char16_t *array, unsigned int size) { write_internal(array, size); }
-	void write(const char32_t *array, unsigned int size) { write_internal(array, size); }
-	void write(const wchar_t *array, unsigned int size) { write_internal(array, size); }
-	void write(const signed char *array, unsigned int size) { write_internal(array, size); }
-	void write(const signed short int *array, unsigned int size) { write_internal(array, size); }
-	void write(const signed int *array, unsigned int size) { write_internal(array, size); }
-	void write(const signed long int *array, unsigned int size) { write_internal(array, size); }
-	void write(const signed long long int *array, unsigned int size) { write_internal(array, size); }
-	void write(const unsigned char *array, unsigned int size) { write_internal(array, size); }
-	void write(const unsigned short int *array, unsigned int size) { write_internal(array, size); }
-	void write(const unsigned int *array, unsigned int size) { write_internal(array, size); }
-	void write(const unsigned long int *array, unsigned int size) { write_internal(array, size); }
-	void write(const unsigned long long int *array, unsigned int size) { write_internal(array, size); }
-	void write(const float *array, unsigned int size) { write_internal(array, size); }
-	void write(const double *array, unsigned int size) { write_internal(array, size); }
-	void write(const long double *array, unsigned int size) { write_internal(array, size); }
-	void write(const bool *array, unsigned int size) { write_internal(array, size); }
+	void write(const char *array, std::size_t size) { write_internal(array, size); }
+	void write(const char16_t *array, std::size_t size) { write_internal(array, size); }
+	void write(const char32_t *array, std::size_t size) { write_internal(array, size); }
+	void write(const wchar_t *array, std::size_t size) { write_internal(array, size); }
+	void write(const signed char *array, std::size_t size) { write_internal(array, size); }
+	void write(const signed short int *array, std::size_t size) { write_internal(array, size); }
+	void write(const signed int *array, std::size_t size) { write_internal(array, size); }
+	void write(const signed long int *array, std::size_t size) { write_internal(array, size); }
+	void write(const signed long long int *array, std::size_t size) { write_internal(array, size); }
+	void write(const unsigned char *array, std::size_t size) { write_internal(array, size); }
+	void write(const unsigned short int *array, std::size_t size) { write_internal(array, size); }
+	void write(const unsigned int *array, std::size_t size) { write_internal(array, size); }
+	void write(const unsigned long int *array, std::size_t size) { write_internal(array, size); }
+	void write(const unsigned long long int *array, std::size_t size) { write_internal(array, size); }
+	void write(const float *array, std::size_t size) { write_internal(array, size); }
+	void write(const double *array, std::size_t size) { write_internal(array, size); }
+	void write(const long double *array, std::size_t size) { write_internal(array, size); }
+	void write(const bool *array, std::size_t size) { write_internal(array, size); }
 
 	bool get(char &t) const { return get_internal(t); }
 	bool get(char16_t &t) const { return get_internal(t); }
@@ -116,24 +117,24 @@ public:
 	bool get(long double &t) const { return get_internal(t); }
 	bool get(bool &t) const { return get_internal(t); }
 
-	bool get(char *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(char16_t *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(char32_t *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(wchar_t *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(signed char *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(signed short int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(signed int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(signed long int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(signed long long int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(unsigned char *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(unsigned short int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(unsigned int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(unsigned long int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(unsigned long long int *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(float *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(double *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(long double *array, unsigned int size) const { return get_internal(array, size); }
-	bool get(bool *array, unsigned int size) const { return get_internal(array, size); }
+	bool get(char *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(char16_t *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(char32_t *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(wchar_t *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(signed char *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(signed short int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(signed int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(signed long int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(signed long long int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(unsigned char *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(unsigned short int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(unsigned int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(unsigned long int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(unsigned long long int *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(float *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(double *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(long double *array, std::size_t size) const { return get_internal(array, size); }
+	bool get(bool *array, std::size_t size) const { return get_internal(array, size); }
 
 	bool getAndNext(char &t) const { return getAndNext_internal(t); }
 	bool getAndNext(char16_t &t) const { return getAndNext_internal(t); }
@@ -154,24 +155,24 @@ public:
 	bool getAndNext(long double &t) const { return getAndNext_internal(t); }
 	bool getAndNext(bool &t) const { return getAndNext_internal(t); }
 
-	bool getAndNext(char *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(char16_t *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(char32_t *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(wchar_t *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(signed char *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(signed short int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(signed int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(signed long int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(signed long long int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(unsigned char *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(unsigned short int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(unsigned int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(unsigned long int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(unsigned long long int *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(float *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(double *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(long double *array, unsigned int size) const { return getAndNext_internal(array, size); }
-	bool getAndNext(bool *array, unsigned int size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(char *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(char16_t *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(char32_t *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(wchar_t *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed char *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed short int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed long int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(signed long long int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned char *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned short int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned long int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(unsigned long long int *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(float *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(double *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(long double *array, std::size_t size) const { return getAndNext_internal(array, size); }
+	bool getAndNext(bool *array, std::size_t size) const { return getAndNext_internal(array, size); }
 
 	/**
 	  * Returns whether the current package equals the given one
@@ -211,7 +212,7 @@ public:
 	  * Increases the read operator by the
 	  * given size in Bytes
 	 **/
-	void next(unsigned int size) const
+	void next(std::size_t size) const
 	{
 		if(iteratorPosition+size > data.size())return;
 		iteratorPosition += size;
@@ -220,7 +221,7 @@ public:
 	/**
 	  * Returns the current content size of the Package
 	 **/
-	unsigned int getLength() const
+	std::size_t getLength() const
 	{
 		return data.size();
 	}
@@ -251,7 +252,7 @@ public:
 	/**
 	  * Returns the data as an array of bytes
 	 **/
-	const unsigned char* getData() const
+	const char* getData() const
 	{
 		return &(data[0]);
 	}
@@ -259,7 +260,7 @@ public:
 	/**
 	  * Returns the current read iterator position
 	 **/
-	unsigned int getIteratorPosition() const
+	std::size_t getIteratorPosition() const
 	{
 		return iteratorPosition;
 	}
@@ -307,7 +308,7 @@ private:
 	template <class T>
 	void write_internal(const T &t)
 	{
-		const unsigned char *dataToAppend = reinterpret_cast<const unsigned char*>(&t);
+		const char *dataToAppend = reinterpret_cast<const char*>(&t);
 		data.insert(data.end(), dataToAppend, dataToAppend + sizeof(T));
 	}
 
@@ -315,10 +316,10 @@ private:
 	  * Appends the given array of objects to the Package
 	 **/
 	template <class T>
-	void write_internal(const T *t, unsigned int size)
+	void write_internal(const T *t, std::size_t size)
 	{
 		if(size <= 0)return;
-		const unsigned char *dataToAppend = reinterpret_cast<const unsigned char*>(t);
+		const char *dataToAppend = reinterpret_cast<const char*>(t);
 		data.insert(data.end(), dataToAppend, dataToAppend + (sizeof(T)*size));
 	}
 
@@ -339,7 +340,7 @@ private:
 	  * increases the iterator by the size of the objects
 	 **/
 	template <class T>
-	bool getAndNext_internal(T *t, unsigned int size) const
+	bool getAndNext_internal(T *t, std::size_t size) const
 	{
 		bool success = get_internal(t, size);
 		next(size);
@@ -352,7 +353,7 @@ private:
 	template <class T>
 	bool get_internal(T &t) const
 	{
-		unsigned int size = sizeof(T);
+		std::size_t size = sizeof(T);
 		if(iteratorPosition+size > data.size())return false;
 		const void *tempData = reinterpret_cast<const void*>(&data[iteratorPosition]);
 		t = *reinterpret_cast<const T*>(tempData);
@@ -363,11 +364,11 @@ private:
 	  * Returns an array of objects of the given type
 	 **/
 	template <class T>
-	bool get_internal(T *t, unsigned int size) const
+	bool get_internal(T *t, std::size_t size) const
 	{
 		if(size <= 0)return true;
 		if(iteratorPosition+size > data.size())return false;
-		std::copy(&data[iteratorPosition], &data[iteratorPosition+size], reinterpret_cast<unsigned char*>(t));
+		std::copy(&data[iteratorPosition], &data[iteratorPosition+size], reinterpret_cast<char*>(t));
 		return true;
 	}
 
@@ -376,17 +377,19 @@ private:
 	/**
 	  * The char array where the data are stored
 	 **/
-	std::vector<unsigned char> data;
+	std::vector<char> data;
 
 	/**
 	  * The current interator position
 	 **/
-	mutable unsigned int iteratorPosition;
+	mutable std::size_t iteratorPosition;
 
 }; //end class package
 
 
 /*-----	Functions for adding data to package	-----*/
+
+template <class T> void operator<<(Package &p, const T &t);
 
 /**
   * Adds the given object to the Package
@@ -400,10 +403,19 @@ inline void operator<<(Package &p, const T &t)
 /**
   * Adds the given array to the Package
  **/
-template <typename T, unsigned int N>
+template <typename T, std::size_t N>
 inline void operator<<(Package &p, const T (&t)[N])
 {
 	p.write(t, N);
+}
+
+/**
+  * Appends the given size_t to the Package
+ **/
+template <>
+inline void operator<<(Package &p, const std::size_t &t)
+{
+	p.write((unsigned int)t);
 }
 
 /**
@@ -421,13 +433,53 @@ inline void operator<<(Package &p, const Package &t)
 template <>
 inline void operator<<(Package &p, const std::string &t)
 {
-	const unsigned int size = t.size();
+	const size_t size = t.size();
 	p<<size;
 	p.write(t.c_str(), size);
 }
 
+/**
+  * Adds the given vector to the Package
+ **/
+template <class T>
+inline void operator<<(Package &p, const std::vector<T> &t)
+{
+	const size_t size = t.size();
+	p<<size;
+	for(std::size_t i = 0; i < size; ++i)
+	{
+		p<<t[i];
+	}
+}
+
+/**
+  * Adds the given list to the Package
+ **/
+template <class T>
+inline void operator<<(Package &p, const std::list<T> &t)
+{
+	const std::size_t size = t.size();
+	p<<size;
+	for(const T &value : t)
+	{
+		p<<value;
+	}
+}
+
+/**
+  * Adds the given pair to the Package
+ **/
+template <class A, class B>
+inline void operator<<(Package &p, const std::pair<A,B> &t)
+{
+	p<<t.first;
+	p<<t.second;
+}
+
 
 /*-----	Functions for getting data from package	-----*/
+
+template <class T> bool operator>>(const Package &p, T &t);
 
 /**
   * Retrieves the given object from the Package
@@ -441,13 +493,25 @@ inline bool operator>>(const Package &p, T &t)
 /**
   * Retrieves the given array from the Package
  **/
-template <typename T, unsigned int N>
-bool operator>>(const Package &p, T(&t)[N])
+template <typename T, std::size_t N>
+inline bool operator>>(const Package &p, T(&t)[N])
 {
-	for(unsigned int i = 0; i < N; i++)
+	for(std::size_t i = 0; i < N; i++)
 	{
-		if(!p.getAndNext(t[i]))return false;
+		if(!(p>>t[i]))return false;
 	}
+	return true;
+}
+
+/**
+  * Retrieves the given size_t from the Package
+ **/
+template <>
+inline bool operator>>(const Package &p, size_t &t)
+{
+	unsigned int temp;
+	if(!p.getAndNext(temp))return false;
+	t = temp;
 	return true;
 }
 
@@ -457,11 +521,56 @@ bool operator>>(const Package &p, T(&t)[N])
 template <>
 inline bool operator>>(const Package &p, std::string &t)
 {
-	unsigned int size;
-	if(!p.getAndNext(size))return false;
+	std::size_t size;
+	if(!(p>>size))return false;
 	t.resize(size);
 	bool success = p.getAndNext(&t[0], size);
 	return success;
+}
+
+/**
+  * Retrieves the given vector from the Package
+ **/
+template <class T>
+inline bool operator>>(const Package &p, std::vector<T> &t)
+{
+	std::size_t size;
+	if(!(p>>size))return false;
+	t.resize(size);
+	for(unsigned int i = 0; i < size; ++i)
+	{
+		if(!(p>>t[i]))return false;
+	}
+	return true;
+}
+
+/**
+  * Retrieves the given list from the Package
+ **/
+template <class T>
+inline bool operator>>(const Package &p, std::list<T> &t)
+{
+	std::size_t size;
+	if(!(p>>size))return false;
+	t.clear();
+	for(unsigned int i = 0; i < size; ++i)
+	{
+		T value;
+		if(!(p>>value))return false;
+		t.push_back(value);
+	}
+	return true;
+}
+
+/**
+  * Retrieves the given pair from the Package
+ **/
+template <class A, class B>
+inline bool operator>>(const Package &p, std::pair<A,B> &t)
+{
+	if(!(p>>t.first))return false;
+	if(!(p>>t.second))return false;
+	return true;
 }
 
 } //end namespace cluster
