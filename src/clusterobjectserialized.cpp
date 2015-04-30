@@ -18,7 +18,7 @@ namespace cluster
 	  * This enum defines the actions of the
 	  * ClusterObjectSerialized
 	 **/
-	enum class ClusterObjectSerializedOperation : unsigned char
+	enum class ClusterObjectSerializedOperation : char
 	{
 		/**
 		  * Full data is used to retireve or send
@@ -40,7 +40,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, ClusterObjectSerializedOperation &t)
 	{
-		return p>>reinterpret_cast<unsigned char&>(t);
+		return p>>reinterpret_cast<char&>(t);
 	}
 
 
@@ -51,13 +51,13 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const ClusterObjectSerializedOperation &t)
 	{
-		p<<reinterpret_cast<const unsigned char&>(t);
+		p<<reinterpret_cast<const char&>(t);
 	}
 
 	/**
 	  * This enum defines the type of message
 	 **/
-	enum class ClusterObjectSerializedType : unsigned char
+	enum class ClusterObjectSerializedType : char
 	{
 		/**
 		  * Indicates that the message is intended
@@ -85,7 +85,7 @@ namespace cluster
 	template <>
 	inline bool operator>>(const Package &p, ClusterObjectSerializedType &t)
 	{
-		return p>>reinterpret_cast<unsigned char&>(t);
+		return p>>reinterpret_cast<char&>(t);
 	}
 
 
@@ -96,7 +96,7 @@ namespace cluster
 	template <>
 	inline void operator<<(Package &p, const ClusterObjectSerializedType &t)
 	{
-		p<<reinterpret_cast<const unsigned char&>(t);
+		p<<reinterpret_cast<const char&>(t);
 	}
 
 } //end namespace cluster
@@ -131,7 +131,7 @@ void ClusterObjectSerialized::memberOnline(const Address &ip, bool isMaster)
 		p<<ClusterObjectSerializedType::mine;
 		p<<ClusterObjectSerializedOperation::full_data;
 		ClusterObject::askPackage(ip, p, &answer);
-		rebuildAll(answer);
+		rebuildAll(answer, ip);
 		rebuilded = true;
 	}
 	rebuildMutex.unlock();
@@ -170,6 +170,14 @@ bool ClusterObjectSerialized::sendPackage(const Package &a, AnswerPackage *answe
 	return ClusterObject::ClusterObject_send(addCurrentSignature(message), answer);
 }
 
+bool ClusterObjectSerialized::sendPackageUnserialized(const Package &a, AnswerPackage *answer)
+{
+	Package message;
+	message<<ClusterObjectSerializedType::other_ask;
+	message<<a;
+	return ClusterObject::ClusterObject_send(addCurrentSignature(message), answer);
+}
+
 bool ClusterObjectSerialized::askPackage(const Address &ip, const Package &a, Package *answer)
 {
 	Package message;
@@ -178,23 +186,23 @@ bool ClusterObjectSerialized::askPackage(const Address &ip, const Package &a, Pa
 	return ClusterObject::ClusterObject_ask(ip, addCurrentSignature(message), answer);
 }
 
-bool ClusterObjectSerialized::received(const Address &ip, const Package &message, Package &answer, Package &/*to_send*/)
+bool ClusterObjectSerialized::received(const Address &ip, const Package &message, Package &answer, Package &to_send)
 {
 	bool success = false;
 
 	ClusterObjectSerializedType type;
 	ClusterObjectSerializedOperation operation;
-	message>>type;
+	if(!(message>>type))return false;
 	switch(type)
 	{
 	case ClusterObjectSerializedType::mine:
-		message>>operation;
+		if(!(message>>operation))return false;
 		switch(operation)
 		{
 		case ClusterObjectSerializedOperation::get_package:
 		{
 			unsigned long long id;
-			message>>id;
+			if(!(message>>id))return false;
 			Package *p = nullptr;
 			rebuildMutex.lock();
 			for(auto &pkg : lastPackages)
@@ -215,7 +223,7 @@ bool ClusterObjectSerialized::received(const Address &ip, const Package &message
 		case ClusterObjectSerializedOperation::full_data:
 		{
 			rebuildMutex.lock();
-			unsigned int length = 0;
+			std::size_t length = 0;
 			if(lastPackages.empty())answer<<length;
 			else
 			{
@@ -236,12 +244,12 @@ bool ClusterObjectSerialized::received(const Address &ip, const Package &message
 		break;
 	case ClusterObjectSerializedType::other_ask:
 		//Ask packages don't need to be remembered
-		success = perform(message);
+		success = perform(ip, message, answer, to_send);
 		break;
 	case ClusterObjectSerializedType::other:
 	{
 		unsigned long long id;
-		message>>id;
+		if(!(message>>id))return false;
 
 		rebuildMutex.lock();
 
@@ -256,10 +264,16 @@ bool ClusterObjectSerialized::received(const Address &ip, const Package &message
 			bool needToRebuild = true;
 			rebuilded = true;
 
+			Package tempAnswer;
+			Package tempToSend;
+
 			//Oops we missed at least one package!
 			//Get packages before we perform current package
 			for(unsigned long long i = checkId; i < id; ++i)
 			{
+				tempAnswer.clear();
+				tempToSend.clear();
+
 				needToRebuild = true;
 
 				AnswerPackage a;
@@ -280,7 +294,7 @@ bool ClusterObjectSerialized::received(const Address &ip, const Package &message
 						else needToRebuild = false;
 
 						packageToRemember(i, pkg);
-						perform(pkg);
+						perform(*it->first, pkg, tempAnswer, tempToSend);
 
 						first = false;
 					}
@@ -307,14 +321,14 @@ bool ClusterObjectSerialized::received(const Address &ip, const Package &message
 				p<<ClusterObjectSerializedType::mine;
 				p<<ClusterObjectSerializedOperation::full_data;
 				ClusterObject::askPackage(ip, p, &a);
-				rebuildAll(a);
+				rebuildAll(a, ip);
 				success = true;
 			}
 			else
 			{
 				//Remember package if we managed to rebuild the object
 				packageToRemember(id, message.subPackageFromCurrentPosition());
-				success = perform(message);
+				success = perform(ip, message, answer, to_send);
 			}
 		}
 		else if(id < checkId)
@@ -331,7 +345,7 @@ bool ClusterObjectSerialized::received(const Address &ip, const Package &message
 			//Only remembering correct packages
 //std::cout<<id;
 			packageToRemember(id, message.subPackageFromCurrentPosition());
-			success = perform(message);
+			success = perform(ip, message, answer, to_send);
 			rebuilded = false;
 		}
 
@@ -354,7 +368,7 @@ void ClusterObjectSerialized::packageToRemember(const unsigned long long id, con
 	while(lastPackages.size() > maxPackagesToRemember)lastPackages.pop_front();
 }
 
-void ClusterObjectSerialized::rebuildAll(const Package &a)
+void ClusterObjectSerialized::rebuildAll(const Package &a, const Address &address)
 {
 	lastPackages.clear();
 
@@ -363,11 +377,11 @@ void ClusterObjectSerialized::rebuildAll(const Package &a)
 	char *data;
 
 	//Read all Packages to remember
-	a>>length;
+	if(!(a>>length))return;
 	if(length > 0)
 	{
 		data = new char[length];
-		a>>id;
+		if(!(a>>id))return;
 		a.getAndNext(data, length);
 		Package p;
 		p.write(data, length);
@@ -376,7 +390,7 @@ void ClusterObjectSerialized::rebuildAll(const Package &a)
 	}
 
 	//Rebuild subobject
-	rebuild(a);
+	rebuild(a, address);
 
 //std::cout<<"Last rebuild id was "<<id<<std::endl;
 std::cout<<"Rebuilded"<<std::endl;
