@@ -11,6 +11,10 @@
 
 #include <cluster/prototypes/listenersocket.hpp>
 
+#ifndef __linux__
+#include <winsock2.h>
+#endif //__linux__
+
 namespace cluster
 {
 
@@ -76,7 +80,11 @@ private:
 	/**
 	  * The server socket
 	 **/
+#ifdef __linux__
 	int fd_socket;
+#else
+	SOCKET fd_socket;
+#endif //__linux__
 
 	/**
 	  * The timeout which is used when establishing

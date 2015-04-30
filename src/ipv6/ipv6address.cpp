@@ -8,12 +8,17 @@
 
 #include <cluster/ipv6/ipv6address.hpp>
 #include <ctype.h>
+
+#ifdef __linux__
 #include <arpa/inet.h>
+#else
+#include <cluster/prototypes/windowshelpers.hpp>
+#endif //__linux__
 
 using namespace std;
 using namespace cluster;
 
-IPv6Address::IPv6Address(const unsigned char uc_a[16]) :
+IPv6Address::IPv6Address(const uint8_t uc_a[16]) :
 	Address(IPv6Address::encode(uc_a)),
 	a()
 {
@@ -30,7 +35,7 @@ IPv6Address::IPv6Address(const string &str_address) :
 	decode(this->address, a);
 }
 
-void IPv6Address::decode(const std::string &address, unsigned char a[16])
+void IPv6Address::decode(const std::string &address, uint8_t a[16])
 {
 	struct in6_addr addr;
 	if(inet_pton(AF_INET6, address.c_str(), &addr) != 1)
@@ -43,7 +48,7 @@ void IPv6Address::decode(const std::string &address, unsigned char a[16])
 	}
 }
 
-std::string IPv6Address::encode(const unsigned char a[16])
+std::string IPv6Address::encode(const uint8_t a[16])
 {
 	struct in6_addr addr;
 	for(unsigned int i = 0; i < 16; i++)

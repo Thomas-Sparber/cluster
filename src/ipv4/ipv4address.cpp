@@ -15,7 +15,7 @@
 using namespace std;
 using namespace cluster;
 
-IPv4Address::IPv4Address(const unsigned char uc_a[4]) :
+IPv4Address::IPv4Address(const uint8_t uc_a[4]) :
 	Address(IPv4Address::encode(uc_a)),
 	a()
 {
@@ -32,7 +32,7 @@ IPv4Address::IPv4Address(const string &str_address) :
 	decode(this->address, a);
 }
 
-void IPv4Address::decode(const std::string &address, unsigned char a[4])
+void IPv4Address::decode(const std::string &address, uint8_t a[4])
 {
 	std::string s;
 	unsigned int counter = 0;
@@ -45,7 +45,7 @@ void IPv4Address::decode(const std::string &address, unsigned char a[4])
 			//is not allowed
 			if(counter > 2)throw AddressException("IP address contains to many numbers");
 
-			a[counter] = (unsigned char)(atoi(s.c_str()));
+			a[counter] = uint8_t(atoi(s.c_str()));
 			counter++;
 			s = "";
 		}
@@ -56,10 +56,10 @@ void IPv4Address::decode(const std::string &address, unsigned char a[4])
 		}
 	}
 	if(counter != 3)throw AddressException("IP address contains not enough numbers");
-	a[counter] = (unsigned char)(atoi(s.c_str()));
+	a[counter] = uint8_t(atoi(s.c_str()));
 }
 
-std::string IPv4Address::encode(const unsigned char a[4])
+std::string IPv4Address::encode(const uint8_t a[4])
 {
 	std::stringstream ss;
 	ss<<short(a[0])<<"."<<short(a[1])<<"."<<short(a[2])<<"."<<short(a[3]);

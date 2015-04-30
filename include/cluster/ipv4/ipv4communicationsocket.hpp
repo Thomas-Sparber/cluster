@@ -11,6 +11,10 @@
 
 #include <cluster/prototypes/communicationsocket.hpp>
 
+#ifndef __linux__
+#include <winsock2.h>
+#endif //__linux__
+
 namespace cluster
 {
 
@@ -30,7 +34,11 @@ public:
 	  * can be called when the connection was already
 	  * established before.
 	 **/
+#ifdef __linux__
 	IPv4CommunicationSocket(const IPv4Address &ipAddress, uint16_t port, int fd_client, unsigned int timeout);
+#else
+	IPv4CommunicationSocket(const IPv4Address &ipAddress, uint16_t port, SOCKET fd_client, unsigned int timeout);
+#endif
 
 	/**
 	  * Creates a communication socket to the
@@ -81,7 +89,11 @@ private:
 	/**
 	  * The file descriptor which is used by the socket
 	 **/
+#ifdef __linux__
 	int fd_client;
+#else
+	SOCKET fd_client;
+#endif //__linux__
 
 	/**
 	  * This variable is used for the copy constructor

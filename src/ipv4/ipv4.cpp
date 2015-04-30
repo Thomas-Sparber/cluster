@@ -7,9 +7,13 @@
  **/
 
 #include <cluster/ipv4/ipv4.hpp>
+
+#ifdef __linux__
 #include <ifaddrs.h>
 #include <arpa/inet.h>
-#include <iostream>
+#else
+#include <winsock2.h>
+#endif //__linux__
 
 using namespace std;
 using namespace cluster;
@@ -19,10 +23,19 @@ IPv4::IPv4(uint16_t ui_port, unsigned int ui_timeout, unsigned int ui_listenBack
 	port(ui_port),
 	timeout(ui_timeout),
 	listenBacklog(ui_listenBacklog)
-{}
+{
+#ifndef __linux__
+	WSAData data;
+	WSAStartup(2, &data);
+#endif //__linux__
+}
 
 IPv4::~IPv4()
-{}
+{
+#ifndef __linux__
+	WSACleanup();
+#endif //__linux__
+}
 
 ListenerSocket* IPv4::createListenerSocket() const
 {
@@ -52,12 +65,13 @@ CommunicationSocket* IPv4::createCommunicationSocket(const Address &address) con
 void IPv4::getAddresses(std::list<Address*> &out) const
 {
 	//Read addresses for current computer
+#ifdef __linux__
 	struct ifaddrs *ifAddrStruct = nullptr;
 	getifaddrs(&ifAddrStruct);
 
 	for(struct ifaddrs *ifa = ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next)
 	{
-		if(ifa->ifa_addr->sa_family == AF_INET)
+		if(ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET)
 		{
 			// is a valid IP4 Address
 			void *temp = reinterpret_cast<void*>(ifa->ifa_addr);
@@ -69,8 +83,24 @@ void IPv4::getAddresses(std::list<Address*> &out) const
 				out.push_back(a);
 			}
 		}
-        }
-        if(ifAddrStruct)freeifaddrs(ifAddrStruct);
+	}
+	if(ifAddrStruct)freeifaddrs(ifAddrStruct);
+#else
+	char ac[256];
+	if(gethostname(ac, sizeof(ac)) != SOCKET_ERROR)
+	{
+		if(struct hostent *phe = gethostbyname(ac))
+		{
+			for(unsigned int i = 0; phe->h_addr_list[i] != nullptr; ++i)
+			{
+				if(Address *a = decodeAddress(inet_ntoa(*reinterpret_cast<struct in_addr*>(phe->h_addr_list[i]))))
+				{
+					out.push_back(a);
+				}
+			}
+		}
+	}
+#endif //__linux__
 }
 
 Address* IPv4::decodeAddress(const std::string &address) const

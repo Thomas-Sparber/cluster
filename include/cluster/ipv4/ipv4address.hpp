@@ -25,7 +25,7 @@ public:
 	  * Constructs an IPv4Address using a
 	  * a char array
 	 **/
-	IPv4Address(const unsigned char a[4]);
+	IPv4Address(const uint8_t a[4]);
 
 	/**
 	  * Constructs an address using its string
@@ -56,19 +56,19 @@ public:
 	  * Converts an Address in string representation
 	  * into the char array representation
 	 **/
-	static void decode(const std::string &address, unsigned char a[4]);
+	static void decode(const std::string &address, uint8_t a[4]);
 
 	/**
 	  * Converts an Address in char array representation
 	  * into the string representation
 	 **/
-	static std::string encode(const unsigned char a[4]);
+	static std::string encode(const uint8_t a[4]);
 
 protected:
 	/**
 	  * The address in char array representation
 	 **/
-	unsigned char a[4];
+	uint8_t a[4];
 
 }; // end class IPv4Address
 
