@@ -18,7 +18,7 @@
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <cluster/prototypes/windowshelpers.hpp>
+#include <cluster/windowshelpers.hpp>
 #define SHUT_RDWR SD_BOTH
 #endif //__linux__
 

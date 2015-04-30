@@ -23,7 +23,7 @@
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <cluster/prototypes/windowshelpers.hpp>
+#include <cluster/windowshelpers.hpp>
 #endif //__linux__
 
 using namespace std;

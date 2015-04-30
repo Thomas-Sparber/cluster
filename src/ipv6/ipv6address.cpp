@@ -12,7 +12,7 @@
 #ifdef __linux__
 #include <arpa/inet.h>
 #else
-#include <cluster/prototypes/windowshelpers.hpp>
+#include <cluster/windowshelpers.hpp>
 #endif //__linux__
 
 using namespace std;
