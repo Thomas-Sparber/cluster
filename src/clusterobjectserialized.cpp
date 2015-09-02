@@ -223,7 +223,7 @@ bool ClusterObjectSerialized::received(const Address &ip, const Package &message
 		case ClusterObjectSerializedOperation::full_data:
 		{
 			rebuildMutex.lock();
-			std::size_t length = 0;
+			uint64_t length = 0;
 			if(lastPackages.empty())answer<<length;
 			else
 			{
@@ -372,26 +372,24 @@ void ClusterObjectSerialized::rebuildAll(const Package &a, const Address &addres
 {
 	lastPackages.clear();
 
-	unsigned int length;
-	unsigned long long id;
-	char *data;
+	uint64_t length;
 
 	//Read all Packages to remember
 	if(!(a>>length))return;
 	if(length > 0)
 	{
-		data = new char[length];
+		vector<char> data((std::size_t)length);
+		unsigned long long id;
 		if(!(a>>id))return;
-		a.getAndNext(data, length);
+		a.getAndNext(&data[0], (std::size_t)length);
 		Package p;
-		p.write(data, length);
+		p.write(&data[0], (std::size_t)length);
 		lastPackages.push_back(std::pair<unsigned long long,Package>(id, p));
-		delete [] data;
 	}
 
 	//Rebuild subobject
 	rebuild(a, address);
 
 //std::cout<<"Last rebuild id was "<<id<<std::endl;
-std::cout<<"Rebuilded"<<std::endl;
+//std::cout<<"Rebuilded"<<std::endl;
 }

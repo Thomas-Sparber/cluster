@@ -122,7 +122,7 @@ public:
 	  * join and leave the network to be able to redistribute
 	  * the data
 	 **/
-	ClusterObjectDistributed(ClusterObject *network, unsigned int dataRedundancy, unsigned int takeOverSize, unsigned int maxPackagesToRemember=100);
+	ClusterObjectDistributed(ClusterObject *network, unsigned int dataRedundancy, unsigned int takeOverSize, bool lockOnInsert, unsigned int maxPackagesToRemember=100);
 
 	/**
 	  * Default destructor. Removes the member callback.
@@ -184,6 +184,12 @@ public:
 	  * random clients
 	 **/
 	void insertData(const Package &data, std::string &error);
+
+	/**
+	  * Inserts the given id with the given data into
+	  * random clients
+	 **/
+	void insertData(const std::list<Package> &data, std::string &error);
 
 protected:
 	/**
@@ -275,6 +281,12 @@ private:
 	unsigned int takeOverSize;
 
 	/**
+	  * Determines whether the mutex should be locked
+	  * when data is inserted
+	 **/
+	bool lockOnInsert;
+
+	/**
 	  * This vector records the clients which are currently online
 	 **/
 	std::vector<ClientRecord> onlineClients;
@@ -291,9 +303,9 @@ private:
 
 	/**
 	  * This clustermutex is used for synchronization
-	  * for data takeover when a client goes offline
+	  * for data insert and takeover when a client goes offline.
 	 **/
-	ClusterMutex takeOverMutex;
+	ClusterMutex insertMutex;
 
 }; //end class ClusterObjectDistributed
 

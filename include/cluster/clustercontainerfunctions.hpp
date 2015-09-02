@@ -95,25 +95,25 @@ inline void removeObjectFromContainer(std::list<T> &l, const Index &i)
 template<class Index, class T>
 inline T& getObjectFromContainer(std::vector<T> &v, const Index &i)
 {
-	return v[i];
+	return v[(std::size_t)i];
 }
 
 template<class Index, class T>
 inline const T& getObjectFromContainer(const std::vector<T> &v, const Index &i)
 {
-	return v[i];
+	return v[(std::size_t)i];
 }
 
 template<class Index, class T>
 inline void replaceObjectInContainer(std::vector<T> &v, const Index &i, const T &t)
 {
-	v[i] = t;
+	v[(std::size_t)i] = t;
 }
 
 template<class Index, class T>
 inline void removeObjectFromContainer(std::vector<T> &v, const Index &i)
 {
-	v.erase(v.begin() + i);
+	v.erase(v.begin() + (std::size_t)i);
 }
 
 } //end namespace cluster

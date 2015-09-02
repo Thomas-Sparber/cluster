@@ -13,6 +13,7 @@
 #include <cluster/clustercontainer.hpp>
 #include <cluster/clustermutex.hpp>
 #include <cluster/database/database.hpp>
+#include <cluster/clusterspeedtest.hpp>
 #include <signal.h>
 #include <unistd.h>
 #include <iostream>
@@ -25,6 +26,7 @@ using namespace cluster;
 
 void testDatabase(const string &ip1, const string &ip2);
 void testClusterContainer(const string &ip1, const string &ip2);
+void testSpeed(const string &ip1, const string &ip2);
 void signalHandler(int signal);
 template<class Index, class Container> void controller(const ClusterContainer<Index, int, Container> *c);
 
@@ -41,6 +43,7 @@ int main(int /*argc*/, char* /*args*/[])
 
 	//testClusterContainer(ip1, ip2);
 	testDatabase(ip1, ip2);
+	//testSpeed(ip1, ip2);
 }
 
 void testDatabase(const string &ip1, const string &ip2)
@@ -135,6 +138,26 @@ void testClusterContainer(const string &ip1, const string &ip2)
 		usleep(rand() % 10000);
 	}
 	//t.join();
+
+	network.close();
+}
+
+void testSpeed(const string &ip1, const string &ip2)
+{
+	IPv4 p(1234);
+	p2p network(p);
+	if(!ip1.empty() && !ip2.empty())network.addAddressRange(IPv4Address(ip1), IPv4Address(ip2));
+	ClusterSpeedTest test(&network, 10000);
+
+	cout<<"Network structure:"<<endl<<network.getWholeStructure();
+
+	test.start();
+	while(running)
+	{
+		test.printStatistics();
+		sleep(5);
+	}
+	test.stop();
 
 	network.close();
 }

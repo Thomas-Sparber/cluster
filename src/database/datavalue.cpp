@@ -721,8 +721,7 @@ void DataValue::setType(const std::string &t)
 		return;
 	}
 	if(t == "tinyblob" || t == "tinytext" || t == "blob" || t == "text" ||
-		t == "mediumblob" || t == "mediumtext" || t == "longblob" || t == "longtext" ||
-		t == "blob" || t == "text")
+		t == "mediumblob" || t == "mediumtext" || t == "longblob" || t == "longtext")
 	{
 		type = ValueType::c_text;
 		return;

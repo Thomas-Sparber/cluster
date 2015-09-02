@@ -106,7 +106,7 @@ void Database::sendToNetwork(const Address &address, const SQLQuery &query, mute
 	}
 }
 
-void Database::sendToNetwork(unsigned int clientIndex, const SQLQuery &query, mutex *m, SQLResult *result)
+void Database::sendToNetwork(std::size_t clientIndex, const SQLQuery &query, mutex *m, SQLResult *result)
 {
 	const Address *clientAddress = getOnlineClientAddress(clientIndex);
 	if(!clientAddress)return;
@@ -129,7 +129,7 @@ void Database::sendToNetwork(const Address &address, IndexIterator &it, mutex *m
 	if(m)m->unlock();
 }
 
-void Database::sendToNetwork(unsigned int clientIndex, IndexIterator &it, mutex *m, list<SQLFetchResult> &result)
+void Database::sendToNetwork(std::size_t clientIndex, IndexIterator &it, mutex *m, list<SQLFetchResult> &result)
 {
 	const Address *clientAddress = getOnlineClientAddress(clientIndex);
 	if(!clientAddress)return;
@@ -140,7 +140,7 @@ void Database::sendToNetwork(unsigned int clientIndex, IndexIterator &it, mutex 
 /******************************************************/
 
 Database::Database(ClusterObject *network, const string &str_name, unsigned int ui_dataRedundancy, unsigned int ui_takeOverSize, unsigned int ui_maxPackagesToRemember) :
-	ClusterObjectDistributed(network, ui_dataRedundancy, ui_takeOverSize, ui_maxPackagesToRemember),
+	ClusterObjectDistributed(network, ui_dataRedundancy, ui_takeOverSize, true, ui_maxPackagesToRemember),
 	name(str_name),
 	tables(),
 	databaseMutex()
@@ -202,7 +202,6 @@ bool Database::performCommand(const Package &message, Package &answer, Package &
 	DatabaseOperation operation;
 
 	//Extracting all packages
-	databaseMutex.lock();
 	while(message>>operation)
 	{
 		switch(operation)
@@ -230,7 +229,6 @@ bool Database::performCommand(const Package &message, Package &answer, Package &
 			break;
 		}
 	}
-	databaseMutex.unlock();
 
 	return success;
 }
@@ -293,10 +291,10 @@ bool Database::performFetch(const std::string &id, Package &answer)
 
 	string item;
 	vector<DataValue> indexValues(index->getColumns().size());
-	for(unsigned int i = 0; i < index->getColumns().size(); ++i)
+	for(std::size_t i = 0; i < index->getColumns().size(); ++i)
 	{
 		//Get current column for primary key
-		const Column &c = table->getColumns()[index->getColumns()[i]];
+		const Column &c = table->getColumns()[(std::size_t)index->getColumns()[i]];
 
 		//Get next primary key value
 		if(!getline(ss, item, ','))return false;
@@ -411,7 +409,7 @@ Table* Database::createTable(const string &tableName, SQLResult *result, bool is
 	}
 }
 
-void Database::selectNext(unsigned int onlineClient, IndexIterator &it, SQLFetchResult &out)
+void Database::selectNext(std::size_t onlineClient, IndexIterator &it, SQLFetchResult &out)
 {
 	if(onlineClient == 0)
 	{
@@ -436,6 +434,8 @@ void Database::insert(const std::string &table, const vector<string> &cols, cons
 {
 	Table *t = getTable(table);
 	vector<DataValue> dataValues;
+
+	list<Package> packagesToInsert;
 	
 	for(std::size_t i = 0; i < values.size(); i += t->getColumns().size())
 	{
@@ -445,12 +445,14 @@ void Database::insert(const std::string &table, const vector<string> &cols, cons
 		//Create insert package
 		Package pkg;
 		pkg<<fr;
-		string error;
-		ClusterObjectDistributed::insertData(pkg, error);
-		if(!error.empty())
-		{
-			if(result)result->localFail(error);
-			return;
-		}
+		packagesToInsert.push_back(pkg);
+	}
+
+	string error;
+	ClusterObjectDistributed::insertData(packagesToInsert, error);
+	if(!error.empty())
+	{
+		if(result)result->localFail(error);
+		return;
 	}
 }

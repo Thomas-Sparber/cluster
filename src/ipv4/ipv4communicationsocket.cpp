@@ -14,6 +14,7 @@
 #ifdef __linux__
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #else
 #include <winsock2.h>
@@ -42,11 +43,8 @@ IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, u
 	setsockopt(fd_client, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char*>(&tv), sizeof(struct timeval));
 	setsockopt(fd_client, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&tv), sizeof(struct timeval));
 
-//#ifndef __linux__
-//	//Set flag not to send broken pipe message
-//	int set = 1;
-//	setsockopt(fd_client, SOL_SOCKET, SO_NOSIGPIPE, reinterpret_cast<char*>(&set), sizeof(set));
-//#endif //__linux__
+	int set = 1;
+	setsockopt(fd_client, SOL_SOCKET, TCP_NODELAY, reinterpret_cast<char*>(&set), sizeof(set));
 }
 
 IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, uint16_t ui_port, unsigned int timeout) :
@@ -98,11 +96,8 @@ IPv4CommunicationSocket::IPv4CommunicationSocket(const IPv4Address &ipAddress, u
 	setsockopt(fd_client, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char*>(&tv), sizeof(struct timeval));
 	setsockopt(fd_client, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*>(&tv), sizeof(struct timeval));
 
-//#ifndef __linux__
-//	//Set flag not to send broken pipe message
-//	int set = 1;
-//	setsockopt(fd_client, SOL_SOCKET, SO_NOSIGPIPE, reinterpret_cast<char*>(&set), sizeof(set));
-//#endif //__linux__
+	int set = 1;
+	setsockopt(fd_client, SOL_SOCKET, TCP_NODELAY, reinterpret_cast<char*>(&set), sizeof(set));
 
 	counter = new int(1);
 }
@@ -173,7 +168,7 @@ bool IPv4CommunicationSocket::send(const Package &message)
 	//First sending package size then package content
 
 	//Sending 0 byte packages is illegal
-	if(messageSize <= 0)
+	if(messageSize == 0)
 	{
 		messageSize = 1;
 		char data = '\0';

@@ -118,11 +118,11 @@ Table::Table(const string &str_name, const string &str_folder) :
 
 		for(std::size_t i = 0; i < indices.size(); ++i)
 		{
-			const vector<std::size_t> &cols = indices[i].getColumns();
+			const vector<uint64_t> &cols = indices[i].getColumns();
 			vector<DataValue> indexColumns(cols.size());
 			for(std::size_t j = 0; j < cols.size(); ++j)
 			{
-				indexColumns[j] = row[cols[j]];
+				indexColumns[j] = row[(std::size_t)cols[j]];
 			}
 			indices[i].insert(indexColumns, start, end);
 		}
@@ -257,11 +257,11 @@ vector<DataValue> Table::insert(const vector<DataValue> &values)
 	const long long end = position+rowSize;
 	for(size_t i = 0; i < indices.size(); ++i)
 	{
-		const vector<size_t> &cols = indices[i].getColumns();
+		const vector<uint64_t> &cols = indices[i].getColumns();
 		vector<DataValue> indexColumns(cols.size());
 		for(size_t j = 0; j < cols.size(); ++j)
 		{
-			indexColumns[j] = values[cols[j]];
+			indexColumns[j] = values[(std::size_t)cols[j]];
 		}
 		if(!indices[i].insert(indexColumns, position, end))
 		{
@@ -302,7 +302,7 @@ void Table::select(const std::vector<Column> &cols, IndexIterator &out) const
 
 void Table::selectNext(IndexIterator &it, DataValue *out, vector<DataValue> &key) const
 {
-	const Index &index = indices[it.index];
+	const Index &index = indices[(std::size_t)it.index];
 	auto iterator = index.find(it.iterator);
 
 	if(iterator == index.end())

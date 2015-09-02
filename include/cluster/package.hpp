@@ -235,6 +235,14 @@ public:
 	}
 
 	/**
+	  * Checks whether all data was read from the package
+	 **/
+	bool finished() const
+	{
+		return iteratorPosition == data.size();
+	}
+
+	/**
 	  * Checks whether the Package is empty
 	  * or contains only 0s
 	 **/
@@ -286,7 +294,7 @@ public:
 		{
 			if(isalnum(c))
 			{
-				if(lastWasBinary)os<<'.';
+				if(lastWasBinary)os<<'.'<<std::dec;
 				os<<c;
 				lastWasBinary = false;
 			}
@@ -297,7 +305,8 @@ public:
 				lastWasBinary = true;
 			}
 		}
-		if(lastWasBinary)os<<'.';
+		if(lastWasBinary)os<<'.'<<std::dec;
+		os<<" ("<<data.size()<<")";
 		return os.str();
 	}
 
@@ -412,11 +421,7 @@ inline void operator<<(Package &p, const T (&t)[N])
 /**
   * Appends the given size_t to the Package
  **/
-template <>
-inline void operator<<(Package &p, const std::size_t &t)
-{
-	p.write((unsigned int)t);
-}
+//template <> void operator<<(Package &/*p*/, const std::size_t &/*t*/) __attribute__((deprecated));
 
 /**
   * Appends the given Package to the Package
@@ -433,9 +438,9 @@ inline void operator<<(Package &p, const Package &t)
 template <>
 inline void operator<<(Package &p, const std::string &t)
 {
-	const size_t size = t.size();
+	const uint64_t size = t.size();
 	p<<size;
-	p.write(t.c_str(), size);
+	p.write(t.c_str(), (std::size_t)size);
 }
 
 /**
@@ -444,7 +449,7 @@ inline void operator<<(Package &p, const std::string &t)
 template <class T>
 inline void operator<<(Package &p, const std::vector<T> &t)
 {
-	const size_t size = t.size();
+	const uint64_t size = t.size();
 	p<<size;
 	for(std::size_t i = 0; i < size; ++i)
 	{
@@ -458,7 +463,7 @@ inline void operator<<(Package &p, const std::vector<T> &t)
 template <class T>
 inline void operator<<(Package &p, const std::list<T> &t)
 {
-	const std::size_t size = t.size();
+	const uint64_t size = t.size();
 	p<<size;
 	for(const T &value : t)
 	{
@@ -506,14 +511,7 @@ inline bool operator>>(const Package &p, T(&t)[N])
 /**
   * Retrieves the given size_t from the Package
  **/
-template <>
-inline bool operator>>(const Package &p, size_t &t)
-{
-	unsigned int temp;
-	if(!p.getAndNext(temp))return false;
-	t = temp;
-	return true;
-}
+//template <> bool operator>>(const Package &/*p*/, size_t &/*t*/) __attribute__((deprecated));
 
 /**
   * Retrieves the given string from the Package
@@ -521,10 +519,10 @@ inline bool operator>>(const Package &p, size_t &t)
 template <>
 inline bool operator>>(const Package &p, std::string &t)
 {
-	std::size_t size;
+	uint64_t size;
 	if(!(p>>size))return false;
-	t.resize(size);
-	bool success = p.getAndNext(&t[0], size);
+	t.resize((std::size_t)size);
+	bool success = p.getAndNext(&t[0], (std::size_t)size);
 	return success;
 }
 
@@ -534,9 +532,9 @@ inline bool operator>>(const Package &p, std::string &t)
 template <class T>
 inline bool operator>>(const Package &p, std::vector<T> &t)
 {
-	std::size_t size;
+	uint64_t size;
 	if(!(p>>size))return false;
-	t.resize(size);
+	t.resize((std::size_t)size);
 	for(unsigned int i = 0; i < size; ++i)
 	{
 		if(!(p>>t[i]))return false;
@@ -550,7 +548,7 @@ inline bool operator>>(const Package &p, std::vector<T> &t)
 template <class T>
 inline bool operator>>(const Package &p, std::list<T> &t)
 {
-	std::size_t size;
+	uint64_t size;
 	if(!(p>>size))return false;
 	t.clear();
 	for(unsigned int i = 0; i < size; ++i)

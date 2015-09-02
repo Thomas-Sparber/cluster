@@ -170,6 +170,28 @@ public:
 	}
 
 	/**
+	  * This function should be called by the current
+	  * object to send a message. Then the message
+	  * is received for the current object (at the other
+	  * side(s))
+	 **/
+	virtual bool sendPackage(const Package &a, AnswerPackage *answer)
+	{
+		return ClusterObject_send(addCurrentSignature(a), answer);
+	}
+
+	/**
+	  * This function should be called by the current
+	  * object to ask a member. Then the message
+	  * is received for the current object (at the other
+	  * side(s))
+	 **/
+	virtual bool askPackage(const Address &ip, const Package &a, Package *answer)
+	{
+		return ClusterObject_ask(ip, addCurrentSignature(a), answer);
+	}
+
+	/**
 	  * Returns the type of ClusterObject
 	 **/
 	virtual std::string getType() const = 0;
@@ -199,28 +221,6 @@ protected:
 	  * the package was sent by the current object.
 	 **/
 	Package addCurrentSignature(const Package &a);
-
-	/**
-	  * This function should be called by the current
-	  * object to send a message. Then the message
-	  * is received for the current object (at the other
-	  * side(s))
-	 **/
-	virtual bool sendPackage(const Package &a, AnswerPackage *answer)
-	{
-		return ClusterObject_send(addCurrentSignature(a), answer);
-	}
-
-	/**
-	  * This function should be called by the current
-	  * object to ask a member. Then the message
-	  * is received for the current object (at the other
-	  * side(s))
-	 **/
-	virtual bool askPackage(const Address &ip, const Package &a, Package *answer)
-	{
-		return ClusterObject_ask(ip, addCurrentSignature(a), answer);
-	}
 
 	/**
 	  * This is the final function which is called

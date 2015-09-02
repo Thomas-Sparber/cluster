@@ -353,10 +353,7 @@ void p2p::online(const Address &address, unsigned long long otherTime)
 {
 	//The one with the smaller startTime is the master
 	bool isMaster = (otherTime < startTime);
-
 	const Client client(address, protocol);
-
-//	cout<<"Online "<<address.address<<": "<<otherTime<<", "<<startTime<<endl;
 
 	//Remember host that it needs to answer its members
 	otherPeersToCheckMutex.lock();
@@ -440,8 +437,7 @@ bool p2p::ClusterObject_send(const Package &message, AnswerPackage *answer)
 	}
 	memberMutex.unlock();
 
-	//At least one more than half of the members need to respond
-	while((!continueWithoutMembers || !toSend.empty()) && toSend.size()+1 > (members.size()+1)/2)
+	while((!continueWithoutMembers || !toSend.empty()) && !toSend.empty())
 	{
 		for(auto it = toSend.begin(); it != toSend.end(); it++)
 		{
@@ -475,7 +471,7 @@ bool p2p::ClusterObject_send(const Package &message, AnswerPackage *answer)
 		}
 
 		//Test connection if not enough members answered
-		if(toSend.size()+1 > members.size()/2)
+		if(!toSend.empty())
 		{
 			for(auto it = toSend.begin(); it != toSend.end(); it++)
 			{

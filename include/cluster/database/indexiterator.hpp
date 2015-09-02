@@ -60,7 +60,7 @@ struct IndexIterator
 	/**
 	  * The index where the indexElement can be found
 	 **/
-	std::size_t index;
+	uint64_t index;
 
 	/**
 	  * The iterator of the current indexElement

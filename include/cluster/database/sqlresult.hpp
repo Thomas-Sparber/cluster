@@ -56,14 +56,7 @@ public:
 
 		for(auto r : res.results)
 		{
-//			if(r.first == 0)
-//			{
-				this->results.push_back(std::pair<unsigned int,IndexIterator>(onlineClient, r.second));
-//			}
-//			else
-//			{
-//				this->results.push_back(r);
-//			}
+			this->results.push_back(std::pair<std::size_t,IndexIterator>(onlineClient, r.second));
 		}
 	}
 
@@ -172,7 +165,7 @@ private:
 	/**
 	  * The result of the query
 	 **/
-	std::list<std::pair<unsigned int,IndexIterator> > results;
+	std::list<std::pair<std::size_t,IndexIterator> > results;
 
 	/**
 	  * This list stores the values which are already retrieved

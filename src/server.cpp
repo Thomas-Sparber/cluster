@@ -124,6 +124,7 @@ void Server::handle()
 		Package p;
 		Package answer;
 		client->receive(&p);
+//cout<<client->getAddress().address<<": "<<p.toString()<<endl;
 
 		//Call callback and get answer
 		if(callback)callback(client->getAddress(), p, answer);

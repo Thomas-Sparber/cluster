@@ -99,7 +99,7 @@ public:
 	/**
 	  * Selects the next row from the iterator
 	 **/
-	void selectNext(unsigned int onlineClient, IndexIterator &it, SQLFetchResult &out);
+	void selectNext(std::size_t onlineClient, IndexIterator &it, SQLFetchResult &out);
 
 	/**
 	  * Insertd the given data into the given table
@@ -184,7 +184,7 @@ private:
 	  * and saves the response in result. The mutex
 	  * is used for synchronized access to the result
 	 **/
-	void sendToNetwork(unsigned int clientIndex, const SQLQuery &query, std::mutex *m, SQLResult *result);
+	void sendToNetwork(std::size_t clientIndex, const SQLQuery &query, std::mutex *m, SQLResult *result);
 
 	/**
 	  * Sends the given IndexIterator to the given address
@@ -198,7 +198,7 @@ private:
 	  * and saves the response in result. The mutex
 	  * is used for synchronized access to the result
 	 **/
-	void sendToNetwork(unsigned int clientIndex, IndexIterator &it, std::mutex *m, std::list<SQLFetchResult> &result);
+	void sendToNetwork(std::size_t clientIndex, IndexIterator &it, std::mutex *m, std::list<SQLFetchResult> &result);
 
 private:
 	/**

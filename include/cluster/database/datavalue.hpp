@@ -361,7 +361,7 @@ struct DataValue
 	/**
 	  * The length of the data
 	 **/
-	unsigned int length;
+	uint32_t length;
 
 	/**
 	  * The actual value

@@ -7,6 +7,7 @@ SOURCES_CLUSTER= \
 	src/clusterobject.cpp \
 	src/clusterobjectdistributed.cpp \
 	src/clusterobjectserialized.cpp \
+	src/clusterspeedtest.cpp \
 	src/database/database.cpp \
 	src/database/datavalue.cpp \
 	src/database/sqlquery.cpp \

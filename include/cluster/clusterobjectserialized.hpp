@@ -42,44 +42,6 @@ public:
 	 **/
 	virtual ~ClusterObjectSerialized();
 
-protected:
-	/**
-	  * A class which inherits from this class needs
-	  * to override this function. This function is called
-	  * whenever a package needs to be performed.
-	 **/
-	virtual bool perform(const Address &address, const Package &p, Package &answer, Package &toSend) = 0;
-
-	/**
-	  * A class which inherits from this class needs
-	  * to override this function. This function is called
-	  * whenever a member needs to rebuild and needs
-	  * the data. The given package needs to be filled
-	  * so that the rebuild function can rebuild the
-	  * entire structure using this package.
-	 **/
-	virtual void getRebuildPackage(Package &out) const = 0;
-
-	/**
-	  * A class which inherits from this class needs
-	  * to override this function. This function is called
-	  * whenever the structure needs to be rebuilt entirely.
-	 **/
-	virtual void rebuild(const Package &out, const Address &address) = 0;
-
-	/**
-	  * This function is called whenever a new memeber jois
-	  * the network. It checks whether the new member is the master
-	  * and rebuilds from it if necessary.
-	 **/
-	virtual void memberOnline(const Address &ip, bool isMaster) override;
-
-	/**
-	  * This function is called whenever a memeber is offline.
-	  * It is not used by ClusterObjectSerialized.
-	 **/
-	virtual void memberOffline(const Address &ip) override;
-
 	/**
 	  * This function sends the given package to the network.
 	  * It is possible that this function does not send the
@@ -133,6 +95,44 @@ protected:
 		message<<c;
 		return sendPackageUnserialized(message, answer);
 	}
+
+protected:
+	/**
+	  * A class which inherits from this class needs
+	  * to override this function. This function is called
+	  * whenever a package needs to be performed.
+	 **/
+	virtual bool perform(const Address &address, const Package &p, Package &answer, Package &toSend) = 0;
+
+	/**
+	  * A class which inherits from this class needs
+	  * to override this function. This function is called
+	  * whenever a member needs to rebuild and needs
+	  * the data. The given package needs to be filled
+	  * so that the rebuild function can rebuild the
+	  * entire structure using this package.
+	 **/
+	virtual void getRebuildPackage(Package &out) const = 0;
+
+	/**
+	  * A class which inherits from this class needs
+	  * to override this function. This function is called
+	  * whenever the structure needs to be rebuilt entirely.
+	 **/
+	virtual void rebuild(const Package &out, const Address &address) = 0;
+
+	/**
+	  * This function is called whenever a new memeber jois
+	  * the network. It checks whether the new member is the master
+	  * and rebuilds from it if necessary.
+	 **/
+	virtual void memberOnline(const Address &ip, bool isMaster) override;
+
+	/**
+	  * This function is called whenever a memeber is offline.
+	  * It is not used by ClusterObjectSerialized.
+	 **/
+	virtual void memberOffline(const Address &ip) override;
 
 	/**
 	  * This function is called for every Package theat is

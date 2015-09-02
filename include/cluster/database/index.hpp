@@ -168,7 +168,7 @@ public:
 	/**
 	  * Constructs an index for the given columns
 	 **/
-	Index(const std::vector<std::size_t> &v_columns, bool b_forPrimary) :
+	Index(const std::vector<uint64_t> &v_columns, bool b_forPrimary) :
 		forPrimary(b_forPrimary),
 		columns(v_columns),
 		container()
@@ -177,7 +177,7 @@ public:
 	/**
 	  * Constructs an index for the given column
 	 **/
-	Index(std::size_t column, bool b_forPrimary) :
+	Index(uint64_t column, bool b_forPrimary) :
 		forPrimary(b_forPrimary),
 		columns(),
 		container()
@@ -188,7 +188,7 @@ public:
 	/**
 	  * Adds a column to the index
 	 **/
-	void addColumn(std::size_t c)
+	void addColumn(uint64_t c)
 	{
 		if(!container.empty())throw SQLException("Can't add a column to a non empty index");
 
@@ -261,7 +261,7 @@ public:
 	/**
 	  * Returns the indices which are used for the index
 	 **/
-	const std::vector<std::size_t>& getColumns() const
+	const std::vector<std::uint64_t>& getColumns() const
 	{
 		return columns;
 	}
@@ -283,7 +283,7 @@ private:
 	/**
 	  * The columns the index is holding
 	 **/
-	std::vector<std::size_t> columns;
+	std::vector<uint64_t> columns;
 
 	/**
 	  * The map that holds the index elements

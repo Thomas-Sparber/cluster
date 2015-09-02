@@ -50,7 +50,7 @@ bool SQLResult::fetchRow(Database &db, vector<DataValue> &out)
 	} catch(SQLException &e) {
 		localFail(string("Failed to fetch row: ") + e.text);
 		cout<<e.text<<endl;
-		throw e;
+		throw;
 	}
 
 	return false;

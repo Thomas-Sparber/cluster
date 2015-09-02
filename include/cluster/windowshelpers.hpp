@@ -40,7 +40,7 @@ inline int inet_pton(int af, const char *src, void *dst)
 
 inline int inet_ntop(int af, void *src, char *dst, unsigned long length)
 {
-	struct sockaddr_storage ss;
+	struct sockaddr ss;
 	int size = sizeof(ss);
 	ZeroMemory(&ss, sizeof(ss));
 
@@ -54,6 +54,7 @@ inline int inet_ntop(int af, void *src, char *dst, unsigned long length)
 		break;
 	}
 
+	ss.sa_family = (u_short)af;
 	if(WSAAddressToString(reinterpret_cast<struct sockaddr*>(&ss), size, nullptr, dst, &length) == 0)
 	{
 		return 0;

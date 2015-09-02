@@ -288,13 +288,13 @@ private:
   * The ClusterList represents a ClusterContainer
   * which uses an std::list for the internal storage
  **/
-template<class T, class Index=std::size_t> using ClusterList = ClusterContainer<Index, T, std::list<T> >;
+template<class T, class Index=uint64_t> using ClusterList = ClusterContainer<Index, T, std::list<T> >;
 
 /**
   * The ClusterList represents a ClusterContainer
   * which uses an std::vector for the internal storage
  **/
-template<class T, class Index=std::size_t> using ClusterVector = ClusterContainer<Index, T, std::vector<T> >;
+template<class T, class Index=uint64_t> using ClusterVector = ClusterContainer<Index, T, std::vector<T> >;
 
 } //end namespace cluster
 

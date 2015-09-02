@@ -9,6 +9,8 @@
 #include <cluster/clusterobjectdistributed.hpp>
 #include <iostream>
 #include <set>
+#include <thread>
+#include <unistd.h>
 
 using namespace std;
 using namespace cluster;
@@ -110,14 +112,15 @@ inline void operator<<(Package &p, const OwnOperation &t)
 
 } //end namespace cluster
 
-ClusterObjectDistributed::ClusterObjectDistributed(ClusterObject *network, unsigned int ui_takeOverSize, unsigned int ui_dataRedundancy, unsigned int ui_maxPackagesToRemember) :
+ClusterObjectDistributed::ClusterObjectDistributed(ClusterObject *network, unsigned int ui_takeOverSize, unsigned int ui_dataRedundancy, bool b_lockOnInsert, unsigned int ui_maxPackagesToRemember) :
 	ClusterObjectSerialized(network, ui_maxPackagesToRemember),
 	dataRedundancy(ui_dataRedundancy),
 	takeOverSize(ui_takeOverSize),
+	lockOnInsert(b_lockOnInsert),
 	onlineClients(),
 	idsInClients(),
 	onlineClientsMutex(),
-	takeOverMutex(network)
+	insertMutex(network)
 {
 	//Add local client
 	onlineClients.push_back(ClientRecord(true));
@@ -159,7 +162,7 @@ void ClusterObjectDistributed::addIdsToLocalClient(const list<string> &ids)
 		pkg<<id;
 //		cout<<"Adding "<<id<<endl;
 	}
-	ClusterObjectSerialized::sendPackage(pkg, nullptr);
+	while(ClusterObjectSerialized::sendPackage(pkg, nullptr))usleep(1000);
 }
 
 void ClusterObjectDistributed::setInitialIds(const list<string> &ids)
@@ -175,7 +178,7 @@ void ClusterObjectDistributed::setInitialIds(const list<string> &ids)
 		pkg<<id;
 //		cout<<"Adding "<<id<<endl;
 	}
-	ClusterObjectSerialized::sendPackage(pkg, nullptr);
+	while(!ClusterObjectSerialized::sendPackage(pkg, nullptr))usleep(1000);
 }
 
 void ClusterObjectDistributed::memberOnline(const Address &ip, bool isMaster)
@@ -216,7 +219,7 @@ void ClusterObjectDistributed::memberOffline(const Address &ip)
 			dataToTakeOver = false;
 
 			//Lock cluster mutex
-			takeOverMutex.lock();
+			insertMutex.lock();
 
 			onlineClientsMutex.lock();
 
@@ -280,7 +283,7 @@ void ClusterObjectDistributed::memberOffline(const Address &ip)
 							informPackage<<OwnOperation::inserted;
 							informPackage<<newId;
 
-							ClusterObjectSerialized::sendPackage(informPackage, nullptr);
+							while(!ClusterObjectSerialized::sendPackage(informPackage, nullptr))usleep(1000);
 
 							//Breaking out of loop
 							break;
@@ -300,7 +303,7 @@ void ClusterObjectDistributed::memberOffline(const Address &ip)
 				}
 			}
 			onlineClientsMutex.unlock();
-			takeOverMutex.unlock();
+			insertMutex.unlock();
 		}
 
 		//Set deleted
@@ -354,25 +357,32 @@ bool ClusterObjectDistributed::perform(const Address &address, const Package &p,
 		case OwnOperation::insert: {
 			string id;
 			string error;
-			if(performInsert(p, id, error))
+			list<string> ids;
+			while(!p.finished())
+			{
+				if(performInsert(p, id, error))
+				{
+					ids.push_back(id);
+					onlineClients[0].ids.push_back(id);
+					idsInClients[id].push_back(0);
+				}
+			}
+
+			if(error.empty())
 			{
 				answer<<true;
-//				onlineClientsMutex.lock();
-				onlineClients[0].ids.push_back(id);
-				idsInClients[id].push_back(0);
-//				onlineClientsMutex.unlock();
 				Package message;
 				message<<ClusterObjectDistributedOperation::own;
 				message<<OwnOperation::inserted;
-				message<<id;
-				ClusterObjectSerialized::sendPackage(message, nullptr);
+				for(const string &tempId : ids)message<<tempId;
+				while(!ClusterObjectSerialized::sendPackage(message, nullptr))usleep(1000);
 			}
 			else
 			{
 				answer<<false;
 				answer<<error;
 			}
-			
+			return true;
 		}
 		case OwnOperation::inserted: {
 			//ID was inserted in given client
@@ -386,6 +396,7 @@ bool ClusterObjectDistributed::perform(const Address &address, const Package &p,
 			string id;
 			while(p>>id)
 			{
+//cout<<address.address<<" contains now "<<id<<endl;
 				onlineClients[index].ids.push_back(id);
 				idsInClients[id].push_back(index);
 			}
@@ -393,7 +404,6 @@ bool ClusterObjectDistributed::perform(const Address &address, const Package &p,
 			return true;
 		}
 		case OwnOperation::all_ids:
-//			cout<<"Sending all ids"<<endl;
 			for(const string &id : onlineClients[0].ids)
 				answer<<id;
 			return true;
@@ -420,6 +430,8 @@ void ClusterObjectDistributed::insertData(const Package &data, string &error)
 {
 	set<std::size_t> tried;
 	unsigned int sentCount = 0;
+
+	if(lockOnInsert)insertMutex.lock();
 
 	while(sentCount < dataRedundancy && tried.size() < onlineClients.size())
 	{
@@ -449,7 +461,7 @@ void ClusterObjectDistributed::insertData(const Package &data, string &error)
 				{
 					//Critical error
 					error = err;
-					return;
+					break;
 				}
 			}
 		}
@@ -464,7 +476,7 @@ void ClusterObjectDistributed::insertData(const Package &data, string &error)
 				{
 					//Critical error
 					error = err;
-					return;
+					break;
 				}
 			}
 			onlineClientsMutex.lock();
@@ -477,9 +489,136 @@ void ClusterObjectDistributed::insertData(const Package &data, string &error)
 			message<<ClusterObjectDistributedOperation::own;
 			message<<OwnOperation::inserted;
 			message<<id;
-			ClusterObjectSerialized::sendPackage(message, nullptr);
+			while(!ClusterObjectSerialized::sendPackage(message, nullptr))usleep(1000);
 
 			++sentCount;
+		}
+	}
+
+	if(lockOnInsert)insertMutex.unlock();
+}
+
+void ClusterObjectDistributed::insertData(const list<Package> &data, std::string &error)
+{
+	//onlineClientsMutex.lock();
+	vector<list<Package> > packagesForClient(onlineClients.size());
+	vector<bool> success(onlineClients.size());
+	//vector<thread*> sendingThreads(onlineClients.size());
+	bool criticalError = false;
+	mutex errorMutex;
+
+	for(const Package &pkg : data)
+	{
+		set<std::size_t> tried;
+		unsigned int sentCount = 0;
+
+		while(sentCount < dataRedundancy && tried.size() < getOnlineClientsCount())
+		{
+			const std::size_t onlineClientIndex = rand() % getOnlineClientsCount();
+			if(!tried.insert(onlineClientIndex).second)continue;	//Don't try to insert multiple times
+
+			packagesForClient[onlineClientIndex].push_back(pkg);
+			++sentCount;
+		}
+	}
+
+	if(lockOnInsert)insertMutex.lock();
+
+	for(unsigned int i = 0; i < packagesForClient.size(); ++i)
+	{
+		const unsigned int index = i;
+		success[index] = false;
+		Address *address = nullptr;
+		if(index != 0)address = onlineClients[index].address;
+
+		//TODO for parallel sending either a clustermutex needs to be used,
+		//The packages need to be sent unserialized or the information about
+		//who contains what needs to be sent centrally
+		//sendingThreads[index] = new thread([packagesForClient,&success,index,address,&criticalError,this,&errorMutex,&error] ()
+		//{
+			if(address)
+			{
+				//Create and sendend package to insert data
+				Package message;
+				message<<ClusterObjectDistributedOperation::own;
+				message<<OwnOperation::insert;
+				for(const Package &pkg : packagesForClient[index])message<<pkg;
+				Package answer;
+				ClusterObjectSerialized::askPackage(*address, message, &answer);
+
+				//Check answer
+				bool s;
+				answer>>s;
+				if(!(success[index] = s))
+				{
+					string err;
+					answer>>err;
+					if(!err.empty())
+					{
+						//Critical error
+						criticalError = true;
+						errorMutex.lock();
+						error = err;
+						errorMutex.unlock();
+					}
+				}
+			}
+			else
+			{
+				//Insert data
+				list<string> ids;
+				string id;
+				string err;
+				for(const Package &pkg : packagesForClient[index])
+				{
+					if(performInsert(pkg, id, err))
+					{
+						ids.push_back(id);
+						onlineClients[0].ids.push_back(id);
+						idsInClients[id].push_back(0);
+					}
+				}
+
+				if(!err.empty())
+				{
+					//Critical error
+					criticalError = true;
+					errorMutex.lock();
+					error += err;
+					errorMutex.unlock();
+				}
+				else
+				{
+					//Send other client information about insert
+					Package message;
+					message<<ClusterObjectDistributedOperation::own;
+					message<<OwnOperation::inserted;
+					for(const string &currentId : ids)message<<currentId;
+					message<<id;
+					while(!ClusterObjectSerialized::sendPackage(message, nullptr))usleep(1000);
+
+					success[index] = true;
+				}
+			}
+		//});
+	}
+
+	//onlineClientsMutex.unlock();
+
+	//for(unsigned int i = 0; i < packagesForClient.size(); ++i)
+	//{
+	//	sendingThreads[i]->join();
+	//	delete sendingThreads[i];
+	//}
+	if(lockOnInsert)insertMutex.unlock();
+
+	if(criticalError)return;
+
+	for(unsigned int i = 0; i < success.size(); ++i)
+	{
+		if(!success[i])
+		{
+			insertData(packagesForClient[i], error);
 		}
 	}
 }

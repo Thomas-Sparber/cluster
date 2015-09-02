@@ -138,7 +138,7 @@ bool SQLQuery_createTable::execute(Database &db, SQLResult *result, bool isCoord
 		return false;
 	}
 
-	std::cout<<"CREATE TABLE "<<tableName<<" (";
+	/*std::cout<<"CREATE TABLE "<<tableName<<" (";
 	bool first = true;
 	for(const Column &column : columns)
 	{
@@ -146,6 +146,6 @@ bool SQLQuery_createTable::execute(Database &db, SQLResult *result, bool isCoord
 		else std::cout<<", ";
 		std::cout<<column.toString();
 	}
-	std::cout<<");"<<std::endl;
+	std::cout<<");"<<std::endl;*/
 	return true;
 }

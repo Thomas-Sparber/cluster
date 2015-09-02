@@ -82,11 +82,11 @@ ClusterObject::ClusterObject(ClusterObject &o) :
 
 ClusterObject& ClusterObject::operator=(ClusterObject &o)
 {
-            //Removing this from the current network and adding it to the new one
-            removeChild(this);
-            this->parent = o.addChild(this);
+	//Removing this from the current network and adding it to the new one
+	removeChild(this);
+	this->parent = o.addChild(this);
 
-            return (*this);
+	return (*this);
 }
 
 ClusterObject::~ClusterObject()
