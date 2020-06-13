@@ -9,6 +9,7 @@
 #include <cluster/clustermutex.hpp>
 #include <unistd.h>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 using namespace cluster;

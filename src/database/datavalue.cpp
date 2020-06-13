@@ -1045,6 +1045,7 @@ void DataValue::writeTo(std::ostream &o) const
 		break;
 	case ValueType::c_year:
 		o.write(static_cast<const char*>(value), sizeof(uint8_t));
+		break;
 	case ValueType::c_tinyint:
 		o.write(static_cast<const char*>(value), sizeof(int8_t));
 		break;
@@ -1099,64 +1100,64 @@ bool DataValue::loadFrom(std::istream &i)
 	{
 	case ValueType::c_bit:
 		value = new char[(length / 8) + (length % 8 == 0 ? 0 : 1)];
-		success = i.read(static_cast<char*>(value), sizeof(char) * ((length / 8) + (length % 8 == 0 ? 0 : 1)));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(char) * ((length / 8) + (length % 8 == 0 ? 0 : 1))));
 		break;
 	case ValueType::c_year:
 		value = new uint8_t();
-		success = i.read(static_cast<char*>(value), sizeof(uint8_t));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(uint8_t)));
 		break;
 	case ValueType::c_tinyint:
 		value = new int8_t();
-		success = i.read(static_cast<char*>(value), sizeof(int8_t));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(int8_t)));
 		break;
 	case ValueType::c_bool:
 		value = new bool();
-		success = i.read(static_cast<char*>(value), sizeof(bool));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(bool)));
 		break;
 	case ValueType::c_time:
 	case ValueType::c_smallint:
 		value = new int16_t();
-		success = i.read(static_cast<char*>(value), sizeof(int16_t));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(int16_t)));
 		break;
 	case ValueType::c_mediumint:
 		value = new int32_t();
-		success = i.read(static_cast<char*>(value), sizeof(int32_t));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(int32_t)));
 		break;
 	case ValueType::c_timestamp:
 	case ValueType::c_int:
 	case ValueType::c_bigint:
 		value = new int64_t();
-		success = i.read(static_cast<char*>(value), sizeof(int64_t));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(int64_t)));
 		break;
 	case ValueType::c_text:
 	case ValueType::c_decimal: {
 		unsigned int size;
 		i.read(reinterpret_cast<char*>(&size), sizeof(size));
 		std::vector<char> data(size);
-		success = i.read(&data[0], sizeof(char)*size);
+		success = static_cast<bool>(i.read(&data[0], sizeof(char)*size));
 		value = new std::string(&data[0], &data[0]+size);
 		break;
 	}
 	case ValueType::c_float:
 		value = new float();
-		success = i.read(static_cast<char*>(value), sizeof(float));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(float)));
 		break;
 	case ValueType::c_double:
 		value = new double();
-		success = i.read(static_cast<char*>(value), sizeof(double));
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(double)));
 		break;
 	case ValueType::c_date:
 		value = new char[4];	//YYMD
-		success = i.read(static_cast<char*>(value), sizeof(char)*4);
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(char)*4));
 		break;
 	case ValueType::c_datetime:
 		value = new char[7];	//YYMDHMS
-		success = i.read(static_cast<char*>(value), sizeof(char)*7);
+		success = static_cast<bool>(i.read(static_cast<char*>(value), sizeof(char)*7));
 		break;
 	case ValueType::c_char:
 	case ValueType::c_binary:
 		value = new char[length];
-		success = i.read(static_cast<char*>(value), length);
+		success = static_cast<bool>(i.read(static_cast<char*>(value), length));
 		break;
 	default:
 		throw SQLException("Invalid data type when reading from stream");

@@ -1,0 +1,8 @@
+main.exe
+main
+libcluster.a
+*.o
+*.d
+databases
+doc/html
+doc/latex
