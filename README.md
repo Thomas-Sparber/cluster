@@ -35,3 +35,26 @@ At this point of the time the p2p network is already established which means tha
 
 The screenshot also shows the structure of the cluster network.
 The base element is the p2p-network, next is the database and the last element is a cluster-mutex which is used to synchronize some operations of the database.
+![db1](images/db1.png?raw=true "DB1")
+
+The next screenshot shows the process of creating a table. It is only necessary to execute the command once, it is then published to the other nodes. The execution time shows the durationn of creating the table on all nodes
+![db2](images/db2.png?raw=true "DB2")
+
+The next screenshot shows the insertion of data into the table. This time, logging is enabled to show the exact procedure of inserting data. The node on the top left corner distributes the data randomly across the nodes.
+
+At this point of time there should be mentioned that the redundancy level was set to two which means that every row should be inserted into two different nodes.
+![db3](images/db3.png?raw=true "DB3")
+
+In the next screenshot the select process is shown. The select statement is not yet fully implemented, currently it only supports selecting the entire content of a table.
+
+As it is visible in the screenshot, the data is not ordered according to the primary key but according to the nodes. This means that the data from the current node are used initially, then the other data are fetched from all the other nodes.
+![db4](images/db4.png?raw=true "DB4")
+
+The last screenshot shows the scenario of two failing nodes. This could be a planned or unplanned outage.
+
+It is visible that the node 10.0.0.201 (upper right) fails first. At the point of time when the other nodes recognize the outage, they try to take over the data to keep the redundancy level. They do this by "asking" another node for the data.
+
+The node 10.0.0.1 (bottom left) fails next. Here the same process happens.
+
+After the two clients failed, it is still possible to work with to complete data of the table.
+![db5](images/db5.png?raw=true "DB5")
